@@ -1,0 +1,40 @@
+{
+  "name": "veda-mcp-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP App (Apps SDK) for interacting with a VEDA STAC catalog. Scaffold: wired hello-world tool + React UI resource.",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc --noEmit && cross-env INPUT=mcp-app.html vite build",
+    "watch": "cross-env INPUT=mcp-app.html vite build --watch",
+    "serve": "tsx --watch main.ts",
+    "serve:stdio": "tsx main.ts --stdio",
+    "start": "cross-env NODE_ENV=development pnpm build && pnpm serve",
+    "start:stdio": "cross-env NODE_ENV=development pnpm build 1>&2 && pnpm serve:stdio",
+    "dev": "cross-env NODE_ENV=development concurrently \"pnpm watch\" \"pnpm serve\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.7.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.0",
+    "@types/node": "22.10.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.0",
+    "vite-plugin-singlefile": "^2.3.0"
+  }
+}
