@@ -1,10 +1,4 @@
-/**
- * @file VEDA MCP App — scaffold UI.
- *
- * Renders the placeholder VEDA STAC collection list returned by the
- * `veda_catalog_hello` tool. A later iteration will replace this with a real
- * STAC search and a veda-ui-blocks raster map.
- */
+// Scaffold UI: renders the placeholder collection list from `veda_catalog_hello`.
 import type { App, McpUiHostContext } from "@modelcontextprotocol/ext-apps";
 import { useApp } from "@modelcontextprotocol/ext-apps/react";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";

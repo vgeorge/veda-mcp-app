@@ -1,16 +1,7 @@
 #!/usr/bin/env node
 /**
- * Registers veda-mcp-app with local Claude hosts, computing absolute paths so
- * no manual config editing is needed.
- *
- *   node scripts/setup-claude.mjs            # configure Desktop + Claude Code
- *   node scripts/setup-claude.mjs --print    # dry run: show what would change
- *   node scripts/setup-claude.mjs --remove   # unregister from both
- *   node scripts/setup-claude.mjs --desktop-only | --code-only
- *
- * Claude Desktop: merges an entry into claude_desktop_config.json (per-OS path),
- * leaving other servers untouched. Claude Code: shells out to `claude mcp add`
- * at user scope (skipped if the `claude` CLI is not installed).
+ * Registers veda-mcp-app with local Claude hosts using absolute paths.
+ * Flags: --print (dry run), --remove, --desktop-only, --code-only.
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";

@@ -17,21 +17,16 @@ const MOCK_COLLECTIONS = [
   { id: "hls-swir-falsecolor-composite", title: "HLS SWIR FalseColor Composite" },
 ];
 
-/**
- * Creates a new MCP server instance with tools and resources registered.
- */
 export function createServer(): McpServer {
   const server = new McpServer({
     name: "VEDA MCP App",
     version: "0.1.0",
   });
 
-  // Two-part registration: tool + resource, tied together by the resource URI.
+  // Tool + resource are tied together by this URI (the tool's `_meta.ui`
+  // points the host at the resource to render).
   const resourceUri = "ui://veda-mcp-app/main";
 
-  // Register a tool with UI metadata. When the host calls this tool, it reads
-  // `_meta.ui.resourceUri` to know which resource to fetch and render as an
-  // interactive UI.
   registerAppTool(server,
     "veda_catalog_hello",
     {
@@ -52,7 +47,7 @@ export function createServer(): McpServer {
     },
   );
 
-  // Register the resource, which returns the bundled HTML/JavaScript for the UI.
+  // Serves the bundled single-file UI.
   registerAppResource(server,
     resourceUri,
     resourceUri,

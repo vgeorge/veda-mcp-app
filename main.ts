@@ -14,11 +14,7 @@ import cors from "cors";
 import type { Request, Response } from "express";
 import { createServer } from "./server.js";
 
-/**
- * Starts an MCP server with Streamable HTTP transport in stateless mode.
- *
- * @param createServer - Factory function that creates a new McpServer instance per request.
- */
+// Streamable HTTP transport (stateless: a fresh server per request).
 export async function startStreamableHTTPServer(
   createServer: () => McpServer,
 ): Promise<void> {
@@ -70,11 +66,7 @@ export async function startStreamableHTTPServer(
   process.on("SIGTERM", shutdown);
 }
 
-/**
- * Starts an MCP server with stdio transport.
- *
- * @param createServer - Factory function that creates a new McpServer instance.
- */
+// Stdio transport (used by Claude Desktop / Claude Code).
 export async function startStdioServer(
   createServer: () => McpServer,
 ): Promise<void> {
