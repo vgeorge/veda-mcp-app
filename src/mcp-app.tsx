@@ -4,39 +4,8 @@ import { useApp } from "@modelcontextprotocol/ext-apps/react";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { StrictMode, useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { parseView, type CollectionView, type ItemView, type View } from "../view-contract";
 import styles from "./mcp-app.module.css";
-
-interface Collection {
-  id: string;
-  title: string;
-}
-
-interface Item {
-  id: string;
-  start: string | null;
-  end: string | null;
-  previewHref: string | null;
-}
-
-type View =
-  | { kind: "collections"; collections: Collection[] }
-  | { kind: "items"; collectionId: string; items: Item[] }
-  | null;
-
-function extractView(result: CallToolResult): View {
-  const sc = result.structuredContent as Record<string, unknown> | undefined;
-  if (sc?.kind === "collections") {
-    return { kind: "collections", collections: (sc.collections as Collection[]) ?? [] };
-  }
-  if (sc?.kind === "items") {
-    return {
-      kind: "items",
-      collectionId: (sc.collectionId as string) ?? "",
-      items: (sc.items as Item[]) ?? [],
-    };
-  }
-  return null;
-}
 
 function VedaCatalogApp() {
   const [toolResult, setToolResult] = useState<CallToolResult | null>(null);
@@ -72,13 +41,18 @@ interface VedaCatalogAppInnerProps {
   hostContext?: McpUiHostContext;
 }
 function VedaCatalogAppInner({ app, toolResult, hostContext }: VedaCatalogAppInnerProps) {
-  const [view, setView] = useState<View>(null);
+  const [view, setView] = useState<View | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (toolResult) {
-      setView(extractView(toolResult));
+    if (!toolResult) return;
+    try {
+      setView(parseView(toolResult.structuredContent));
+      setError(null);
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : String(e));
     }
   }, [toolResult]);
 
@@ -88,7 +62,7 @@ function VedaCatalogAppInner({ app, toolResult, hostContext }: VedaCatalogAppInn
       setError(null);
       try {
         const result = await app.callServerTool({ name, arguments: args });
-        setView(extractView(result));
+        setView(parseView(result.structuredContent));
       } catch (e) {
         console.error(e);
         setError(e instanceof Error ? e.message : String(e));
@@ -136,7 +110,7 @@ function CollectionsView({
   busy,
   onOpen,
 }: {
-  collections: Collection[];
+  collections: CollectionView[];
   busy: boolean;
   onOpen: (id: string) => void;
 }) {
@@ -156,7 +130,7 @@ function CollectionsView({
   );
 }
 
-function ItemsView({ collectionId, items }: { collectionId: string; items: Item[] }) {
+function ItemsView({ collectionId, items }: { collectionId: string; items: ItemView[] }) {
   return (
     <div>
       <h2 className={styles.subhead}>{collectionId}</h2>

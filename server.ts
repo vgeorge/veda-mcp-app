@@ -11,6 +11,7 @@ import {
   type CollectionSummary,
   type ItemSummary,
 } from "./stac.js";
+import type { View } from "./view-contract.js";
 
 // Works both from source (server.ts) and compiled (dist/server.js)
 const DIST_DIR = import.meta.filename.endsWith(".ts")
@@ -23,9 +24,10 @@ function collectionsResult(collections: CollectionSummary[]): CallToolResult {
   const text = collections.length
     ? collections.map((c) => `- ${c.id}: ${c.title}`).join("\n")
     : "No matching collections.";
+  const view: View = { kind: "collections", collections };
   return {
     content: [{ type: "text", text: `VEDA STAC collections:\n${text}` }],
-    structuredContent: { kind: "collections", collections },
+    structuredContent: view,
   };
 }
 
@@ -37,9 +39,10 @@ function itemsResult(
   const text = items.length
     ? items.map((i) => `- ${i.id} (${i.start ?? "?"} to ${i.end ?? "?"})`).join("\n")
     : "No items found.";
+  const view: View = { kind: "items", collectionId, demo, items };
   return {
     content: [{ type: "text", text: `Items in ${collectionId}:\n${text}` }],
-    structuredContent: { kind: "items", collectionId, demo, items },
+    structuredContent: view,
   };
 }
 
