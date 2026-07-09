@@ -1,11 +1,13 @@
-// Dev-only visual harness: renders the views with fixture data outside the
-// MCP host, so card layout can be inspected in a plain browser (vite dev,
-// open /preview.html). Not part of the shipped bundle (build input is
-// mcp-app.html only).
+// Dev-only visual harness: renders the step views with fixture data outside
+// the MCP host, so layout can be inspected in a plain browser. Run with
+// INPUT=map.html (the map alias set) so the map stack is real:
+//   INPUT=map.html npx vite --port 3006   ->   /preview.html
+// Not part of the shipped bundles (build inputs are picker/items/map.html).
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@teamimpact/veda-ui-blocks/default.css";
-import type { CollectionView, ItemView } from "../view-contract";
+import type { CollectionView, ItemView, MapView as MapViewData } from "../view-contract";
+import { MapView } from "./map-view";
 import styles from "./mcp-app.module.css";
 import { CollectionsView, ItemsView } from "./views";
 
@@ -14,13 +16,27 @@ const PREVIEW =
 
 const COLLECTIONS: CollectionView[] = [
   {
-    id: "no2-monthly",
-    title: "NO₂",
+    id: "no2-monthly-diff",
+    title: "NO₂ (Diff)",
     description:
       "Darker colors indicate higher nitrogen dioxide (NO₂) levels and more activity. Lighter colors indicate lower levels of NO₂ and less activity.",
+    temporal: { start: "2015-01-01", end: "2023-12-31" },
+    thumbnailHref: "https://thumbnails.openveda.cloud/no2--dataset-cover.jpg",
   },
-  { id: "hls-swir", title: "HLS SWIR FalseColor Composite", description: null },
-  { id: "geos-cf-ana", title: "geos-cf-ana", description: "GEOS-CF analysis files." },
+  {
+    id: "hls-swir",
+    title: "HLS SWIR FalseColor Composite",
+    description: null,
+    temporal: { start: "2020-01-01", end: null },
+    thumbnailHref: null, // exercises the placeholder path
+  },
+  {
+    id: "geos-cf-ana",
+    title: "geos-cf-ana",
+    description: "GEOS-CF analysis files.",
+    temporal: null,
+    thumbnailHref: "https://thumbnails.openveda.cloud/geoscf--dataset-cover.jpg",
+  },
 ];
 
 const ITEMS: ItemView[] = [
@@ -42,16 +58,31 @@ const ITEMS: ItemView[] = [
   },
 ];
 
+// Live fixture: the map fetches the collection, titiler mosaic and tiles from
+// the real dev APIs, so this doubles as the asset-resolution check.
+const MAP_VIEW: MapViewData = {
+  kind: "map",
+  collectionId: "no2-monthly-diff",
+  collectionTitle: "NO₂ (Diff)",
+  renderKey: "dashboard",
+  dateRange: { from: "2020-01-01", to: "2021-12-31" },
+  bbox: [-180, -90, 180, 90],
+  stacRoot: "https://dev.openveda.cloud/api/stac",
+  rasterRoot: "https://dev.openveda.cloud/api/raster",
+  demo: true,
+};
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <main className={styles.main}>
-      <h1>VEDA MCP App</h1>
-      <div className={styles.toolbar}>
-        <button type="button">Run demo</button>
-        <button type="button">Browse collections</button>
-      </div>
-      <CollectionsView collections={COLLECTIONS} busy={false} onOpen={() => {}} />
-      <ItemsView collectionId="no2-monthly" items={ITEMS} demo={true} />
+      <h1>VEDA MCP App views</h1>
+      <MapView view={MAP_VIEW} />
+      <CollectionsView
+        collections={COLLECTIONS}
+        busy={false}
+        onPick={(c) => console.log("picked", c.id)}
+      />
+      <ItemsView collectionId="no2-monthly" items={ITEMS} />
     </main>
   </StrictMode>,
 );

@@ -1,24 +1,37 @@
-// Collections/items views rendered from the parsed View. Kept free of MCP
-// plumbing so the preview harness (preview.html) can render them standalone.
+// Collections/items views rendered from the parsed view data. Kept free of
+// MCP plumbing so the preview harness (preview.html) can render them
+// standalone.
 import type { CollectionView, ItemView } from "../view-contract";
 import { CollectionCard, ItemCard } from "./cards";
 import styles from "./mcp-app.module.css";
 
+// Collapsed dump of what the host actually delivered to ontoolresult, for
+// debugging delivery differences between hosts from inside the sandbox.
+export function DebugDetails({ debug }: { debug: string | null }) {
+  if (!debug) return null;
+  return (
+    <details className={styles.debug}>
+      <summary>Debug: last tool result</summary>
+      <pre>{debug}</pre>
+    </details>
+  );
+}
+
 export function CollectionsView({
   collections,
   busy,
-  onOpen,
+  onPick,
 }: {
   collections: CollectionView[];
   busy: boolean;
-  onOpen: (id: string) => void;
+  onPick: (collection: CollectionView) => void;
 }) {
   if (collections.length === 0) return <p>No collections found.</p>;
   return (
     <ul className={styles.cardList}>
       {collections.map((c) => (
         <li key={c.id}>
-          <CollectionCard collection={c} busy={busy} onOpen={onOpen} />
+          <CollectionCard collection={c} busy={busy} onPick={onPick} />
         </li>
       ))}
     </ul>
@@ -28,11 +41,9 @@ export function CollectionsView({
 export function ItemsView({
   collectionId,
   items,
-  demo,
 }: {
   collectionId: string;
   items: ItemView[];
-  demo: boolean;
 }) {
   return (
     <div>
@@ -43,7 +54,7 @@ export function ItemsView({
         <ul className={styles.cardList}>
           {items.map((item) => (
             <li key={item.id}>
-              <ItemCard item={item} demo={demo} />
+              <ItemCard item={item} />
             </li>
           ))}
         </ul>

@@ -5,45 +5,155 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import {
+  getMapConfig,
   listItems,
+  MapConfigError,
   RASTER_HOST,
+  RASTER_ROOT,
   searchCollections,
+  STAC_ROOT,
   type CollectionSummary,
   type ItemSummary,
 } from "./stac.js";
-import type { View } from "./view-contract.js";
+import {
+  CollectionsViewSchema,
+  ItemsViewSchema,
+  MapViewSchema,
+  type View,
+} from "./view-contract.js";
+
+// One resource per step view; each tool's `_meta.ui.resourceUri` picks the
+// view the host renders inline for that tool's result.
+const PICKER_URI = "ui://veda-mcp-app/picker";
+const ITEMS_URI = "ui://veda-mcp-app/items";
+const MAP_URI = "ui://veda-mcp-app/map";
+
+// Origins the map iframe fetches from at runtime: the STAC/raster APIs (map
+// layer + tiles) and the Carto basemap (style.json on the apex host;
+// tiles.json/sprite/glyphs on the tiles host; vector tiles sharded over
+// tiles-a..tiles-d).
+const MAP_CONNECT_DOMAINS = [
+  ...new Set([new URL(STAC_ROOT).origin, RASTER_HOST]),
+  "https://basemaps.cartocdn.com",
+  "https://tiles.basemaps.cartocdn.com",
+  "https://tiles-a.basemaps.cartocdn.com",
+  "https://tiles-b.basemaps.cartocdn.com",
+  "https://tiles-c.basemaps.cartocdn.com",
+  "https://tiles-d.basemaps.cartocdn.com",
+];
 
 // Works both from source (server.ts) and compiled (dist/server.js)
 const DIST_DIR = import.meta.filename.endsWith(".ts")
   ? path.join(import.meta.dirname, "dist")
   : import.meta.dirname;
 
-const DEMO_COLLECTION = "no2-monthly";
+// Demo dataset: an NO2 collection whose renders metadata is consistent with
+// its items, so the veda-ui-blocks map can actually tile it ("no2-monthly"
+// declares a "no2" asset its items don't have — see getMapConfig's guard).
+const DEMO_COLLECTION = "no2-monthly-diff";
 
-function collectionsResult(collections: CollectionSummary[]): CallToolResult {
-  const text = collections.length
-    ? collections.map((c) => `- ${c.id}: ${c.title}`).join("\n")
-    : "No matching collections.";
-  const view: View = { kind: "collections", collections };
+function coverage(c: CollectionSummary): string {
+  if (!c.temporal) return "";
+  return ` (${c.temporal.start ?? "open"} to ${c.temporal.end ?? "open"})`;
+}
+
+// Build a tool result carrying the view both as structuredContent (the channel
+// conformant hosts like basic-host deliver to the widget) AND as a JSON text
+// content block. Claude Desktop strips structuredContent before handing the
+// result to the widget sandbox and substitutes a placeholder text block, but
+// it passes content text blocks through intact — so the widget recovers the
+// view by JSON-parsing the text blocks (see use-view-result.ts). The model
+// also sees this JSON block, which is acceptable.
+function viewResult(humanText: string, view: View): CallToolResult {
   return {
-    content: [{ type: "text", text: `VEDA STAC collections:\n${text}` }],
+    content: [
+      { type: "text", text: humanText },
+      { type: "text", text: JSON.stringify(view) },
+    ],
     structuredContent: view,
   };
 }
 
-function itemsResult(
-  collectionId: string,
-  items: ItemSummary[],
-  demo = false,
-): CallToolResult {
+function collectionsResult(collections: CollectionSummary[]): CallToolResult {
+  const text = collections.length
+    ? collections.map((c) => `- ${c.id}: ${c.title}${coverage(c)}`).join("\n") +
+      "\n\nThe user can click a collection card to pick a dataset."
+    : "No matching collections.";
+  return viewResult(`VEDA STAC collections:\n${text}`, {
+    kind: "collections",
+    collections,
+  });
+}
+
+function itemsResult(collectionId: string, items: ItemSummary[]): CallToolResult {
   const text = items.length
     ? items.map((i) => `- ${i.id} (${i.start ?? "?"} to ${i.end ?? "?"})`).join("\n")
     : "No items found.";
-  const view: View = { kind: "items", collectionId, demo, items };
-  return {
-    content: [{ type: "text", text: `Items in ${collectionId}:\n${text}` }],
-    structuredContent: view,
+  return viewResult(`Items in ${collectionId}:\n${text}`, {
+    kind: "items",
+    collectionId,
+    items,
+  });
+}
+
+async function mapResult(
+  collectionId: string,
+  datetime: string,
+  demo = false,
+): Promise<CallToolResult> {
+  let config;
+  try {
+    config = await getMapConfig(collectionId, datetime);
+  } catch (e) {
+    if (e instanceof MapConfigError) {
+      return { content: [{ type: "text", text: e.message }], isError: true };
+    }
+    throw e;
+  }
+  const view: View = {
+    kind: "map",
+    ...config,
+    stacRoot: STAC_ROOT,
+    rasterRoot: RASTER_ROOT,
+    demo,
   };
+  return viewResult(
+    `Map of ${config.collectionTitle} (${config.collectionId}), ${config.dateRange.from} to ${config.dateRange.to}.`,
+    view,
+  );
+}
+
+// Subset of McpUiResourceCsp we use (the type isn't re-exported from the
+// package's /server subpath under node16 resolution).
+interface ViewCsp {
+  resourceDomains?: string[];
+  connectDomains?: string[];
+}
+
+// Serve a bundled single-file view. The content item's `_meta.ui.csp` is
+// scoped to what that view actually loads.
+function registerViewResource(
+  server: McpServer,
+  uri: string,
+  htmlFile: string,
+  csp?: ViewCsp,
+): void {
+  registerAppResource(server,
+    uri,
+    uri,
+    { mimeType: RESOURCE_MIME_TYPE },
+    async (): Promise<ReadResourceResult> => {
+      const html = await fs.readFile(path.join(DIST_DIR, htmlFile), "utf-8");
+      return {
+        contents: [{
+          uri,
+          mimeType: RESOURCE_MIME_TYPE,
+          text: html,
+          ...(csp ? { _meta: { ui: { csp } } } : {}),
+        }],
+      };
+    },
+  );
 }
 
 export function createServer(): McpServer {
@@ -52,21 +162,18 @@ export function createServer(): McpServer {
     version: "0.1.0",
   });
 
-  // Tools and resource are tied together by this URI (each tool's `_meta.ui`
-  // points the host at the resource to render).
-  const resourceUri = "ui://veda-mcp-app/main";
-
   registerAppTool(server,
     "search_collections",
     {
       title: "Search VEDA collections",
       description:
-        "Search the VEDA STAC catalog for collections (datasets). Optional case-insensitive substring query over id/title/description; empty query lists collections.",
+        "Search the VEDA STAC catalog for collections (datasets). Optional case-insensitive substring query over id/title/description; empty query lists collections. Renders a picker: the user can click a collection card to announce their pick in the chat.",
       inputSchema: {
         query: z.string().optional().describe("Substring to match against collection id/title/description"),
         limit: z.number().int().min(1).max(50).optional().describe("Max collections to return (default 10)"),
       },
-      _meta: { ui: { resourceUri } },
+      outputSchema: CollectionsViewSchema.shape,
+      _meta: { ui: { resourceUri: PICKER_URI } },
     },
     async ({ query, limit }): Promise<CallToolResult> => {
       const collections = await searchCollections(query, limit);
@@ -86,7 +193,8 @@ export function createServer(): McpServer {
         bbox: z.array(z.number()).length(4).optional().describe("[west, south, east, north]"),
         datetime: z.string().optional().describe("ISO-8601 datetime or range 'start/end'"),
       },
-      _meta: { ui: { resourceUri } },
+      outputSchema: ItemsViewSchema.shape,
+      _meta: { ui: { resourceUri: ITEMS_URI } },
     },
     async ({ collectionId, limit, bbox, datetime }): Promise<CallToolResult> => {
       const items = await listItems(collectionId, { limit, bbox, datetime });
@@ -95,38 +203,49 @@ export function createServer(): McpServer {
   );
 
   registerAppTool(server,
+    "show_map",
+    {
+      title: "Show collection map",
+      description:
+        "Render an interactive single-layer raster map of a VEDA STAC collection over a date range. Resolve the collection id with search_collections first when the user names a phenomenon (e.g. \"NO2\" -> no2-monthly).",
+      inputSchema: {
+        collectionId: z.string().describe("STAC collection id, e.g. no2-monthly"),
+        datetime: z.string().describe('Date or range: "YYYY-MM-DD" or "YYYY-MM-DD/YYYY-MM-DD"'),
+      },
+      outputSchema: MapViewSchema.shape,
+      _meta: { ui: { resourceUri: MAP_URI } },
+    },
+    async ({ collectionId, datetime }): Promise<CallToolResult> =>
+      mapResult(collectionId, datetime),
+  );
+
+  registerAppTool(server,
     "run_demo",
     {
       title: "Run VEDA MCP app demo",
       description:
-        `Run a demo of the VEDA MCP app: fetches recent items from the "${DEMO_COLLECTION}" (Nitrogen Dioxide) collection and renders them with raster previews. Use when asked to "run a demo".`,
+        `Run a demo of the VEDA MCP app: renders an interactive map of the "${DEMO_COLLECTION}" (Nitrogen Dioxide difference) collection for 2020-2021. Use when asked to "run a demo".`,
       inputSchema: {},
-      _meta: { ui: { resourceUri } },
+      outputSchema: MapViewSchema.shape,
+      _meta: { ui: { resourceUri: MAP_URI } },
     },
-    async (): Promise<CallToolResult> => {
-      const items = await listItems(DEMO_COLLECTION, { limit: 6 });
-      return itemsResult(DEMO_COLLECTION, items, true);
-    },
+    async (): Promise<CallToolResult> =>
+      mapResult(DEMO_COLLECTION, "2020-01-01/2021-12-31", true),
   );
 
-  // Serves the bundled single-file UI. The content item's `_meta.ui.csp`
-  // allowlists the raster host so item preview images can load.
-  registerAppResource(server,
-    resourceUri,
-    resourceUri,
-    { mimeType: RESOURCE_MIME_TYPE },
-    async (): Promise<ReadResourceResult> => {
-      const html = await fs.readFile(path.join(DIST_DIR, "mcp-app.html"), "utf-8");
-      return {
-        contents: [{
-          uri: resourceUri,
-          mimeType: RESOURCE_MIME_TYPE,
-          text: html,
-          _meta: { ui: { csp: { resourceDomains: [RASTER_HOST] } } },
-        }],
-      };
-    },
-  );
+  // Picker cards load collection cover thumbnails (img-src).
+  registerViewResource(server, PICKER_URI, "picker.html", {
+    resourceDomains: ["https://thumbnails.openveda.cloud"],
+  });
+  // Items view loads raster preview thumbnails (img-src).
+  registerViewResource(server, ITEMS_URI, "items.html", {
+    resourceDomains: [RASTER_HOST],
+  });
+  // Map view fetches the APIs + basemap (connect-src) and tile images.
+  registerViewResource(server, MAP_URI, "map.html", {
+    resourceDomains: [RASTER_HOST, "https://tiles.basemaps.cartocdn.com"],
+    connectDomains: MAP_CONNECT_DOMAINS,
+  });
 
   return server;
 }

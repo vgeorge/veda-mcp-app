@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseView } from "./view-contract.js";
+import {
+  parseCollectionsView,
+  parseItemsView,
+  parseMapView,
+} from "./view-contract.js";
 
 const ITEM = {
   id: "OMI_202312",
@@ -10,41 +14,64 @@ const ITEM = {
   bbox: [-180, -90, 180, 90],
 };
 
-describe("parseView", () => {
-  it("parses a collections view", () => {
-    const view = parseView({
+const COLLECTION = {
+  id: "no2-monthly-diff",
+  title: "NO2 (Diff)",
+  description: "Nitrogen dioxide difference",
+  temporal: { start: "2015-01-01", end: "2023-12-31" },
+  thumbnailHref: "https://thumbnails.openveda.cloud/no2--dataset-cover.jpg",
+};
+
+const MAP = {
+  kind: "map",
+  collectionId: "no2-monthly-diff",
+  collectionTitle: "NO2 (Diff)",
+  renderKey: "dashboard",
+  dateRange: { from: "2020-01-01", to: "2021-12-31" },
+  bbox: [-180, -90, 180, 90],
+  stacRoot: "https://dev.openveda.cloud/api/stac",
+  rasterRoot: "https://dev.openveda.cloud/api/raster",
+  demo: true,
+};
+
+describe("parseCollectionsView", () => {
+  it("parses collections with temporal coverage (nullable)", () => {
+    const view = parseCollectionsView({
       kind: "collections",
       collections: [
-        { id: "no2-monthly", title: "NO2", description: "Nitrogen dioxide" },
-        { id: "hls-swir", title: "HLS SWIR", description: null },
+        COLLECTION,
+        { id: "hls-swir", title: "HLS SWIR", description: null, temporal: null, thumbnailHref: null },
       ],
     });
-    expect(view).toEqual({
-      kind: "collections",
-      collections: [
-        { id: "no2-monthly", title: "NO2", description: "Nitrogen dioxide" },
-        { id: "hls-swir", title: "HLS SWIR", description: null },
-      ],
-    });
+    expect(view.collections).toEqual([
+      COLLECTION,
+      { id: "hls-swir", title: "HLS SWIR", description: null, temporal: null, thumbnailHref: null },
+    ]);
   });
 
-  it("parses an items view with the demo flag", () => {
-    const view = parseView({
+  it("rejects a different view kind", () => {
+    expect(() =>
+      parseCollectionsView({ kind: "items", collectionId: "x", items: [] }),
+    ).toThrow(/Unexpected result from server/);
+  });
+});
+
+describe("parseItemsView", () => {
+  it("parses an items view", () => {
+    const view = parseItemsView({
       kind: "items",
       collectionId: "no2-monthly",
-      demo: true,
       items: [ITEM],
     });
     expect(view).toEqual({
       kind: "items",
       collectionId: "no2-monthly",
-      demo: true,
       items: [ITEM],
     });
   });
 
   it("strips unknown keys so an older UI tolerates a newer server", () => {
-    const view = parseView({
+    const view = parseItemsView({
       kind: "items",
       collectionId: "no2-monthly",
       items: [{ ...ITEM, futureField: "ignored" }],
@@ -57,19 +84,26 @@ describe("parseView", () => {
     });
   });
 
-  it("throws on an unknown kind", () => {
-    expect(() => parseView({ kind: "map", tiles: [] })).toThrow(
-      /Unexpected result from server/,
+  it("throws on a missing required field, naming the path", () => {
+    expect(() => parseItemsView({ kind: "items", items: [ITEM] })).toThrow(
+      /collectionId/,
     );
   });
 
-  it("throws on a missing required field, naming the path", () => {
-    expect(() =>
-      parseView({ kind: "items", items: [ITEM] }),
-    ).toThrow(/collectionId/);
+  it("throws on absent structuredContent", () => {
+    expect(() => parseItemsView(undefined)).toThrow(
+      /Unexpected result from server/,
+    );
+  });
+});
+
+describe("parseMapView", () => {
+  it("parses a map view", () => {
+    expect(parseMapView(MAP)).toEqual(MAP);
   });
 
-  it("throws on absent structuredContent", () => {
-    expect(() => parseView(undefined)).toThrow(/Unexpected result from server/);
+  it("throws on a map view missing its date range", () => {
+    const { dateRange: _dateRange, ...withoutRange } = MAP;
+    expect(() => parseMapView(withoutRange)).toThrow(/dateRange/);
   });
 });

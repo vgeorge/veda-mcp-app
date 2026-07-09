@@ -10,24 +10,33 @@ if (!INPUT) {
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
-// veda-ui-blocks' single entry statically imports its map/query/carousel deps;
-// we only use its cards, so stub the heavy deps out of the bundle.
+// veda-ui-blocks' single entry statically imports every optional dep, so each
+// view entry stubs what it doesn't render. Only the map entry (and the dev
+// preview harness, which renders the map) keeps the real map stack.
 const VEDA_UI_BLOCKS_STUB = path.resolve(
   import.meta.dirname,
   "src/veda-ui-blocks-stubs.ts",
 );
 
+const NEEDS_MAP = ["map.html", "preview.html"].includes(INPUT);
+
+const STUBS: Record<string, string> = {
+  "mapbox-gl-compare": VEDA_UI_BLOCKS_STUB,
+  "embla-carousel-react": VEDA_UI_BLOCKS_STUB,
+  ...(NEEDS_MAP
+    ? {}
+    : {
+        "maplibre-gl": VEDA_UI_BLOCKS_STUB,
+        "react-map-gl/maplibre": VEDA_UI_BLOCKS_STUB,
+        "@tanstack/react-query": VEDA_UI_BLOCKS_STUB,
+        "@developmentseed/stac-react": VEDA_UI_BLOCKS_STUB,
+      }),
+};
+
 export default defineConfig({
   plugins: [react(), viteSingleFile()],
   resolve: {
-    alias: {
-      "maplibre-gl": VEDA_UI_BLOCKS_STUB,
-      "react-map-gl/maplibre": VEDA_UI_BLOCKS_STUB,
-      "mapbox-gl-compare": VEDA_UI_BLOCKS_STUB,
-      "@tanstack/react-query": VEDA_UI_BLOCKS_STUB,
-      "@developmentseed/stac-react": VEDA_UI_BLOCKS_STUB,
-      "embla-carousel-react": VEDA_UI_BLOCKS_STUB,
-    },
+    alias: STUBS,
   },
   build: {
     sourcemap: isDevelopment ? "inline" : undefined,

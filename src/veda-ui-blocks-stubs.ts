@@ -1,10 +1,11 @@
-// Build-time stub for veda-ui-blocks' map/query/carousel dependencies.
-// The package's flat dist/index.js imports maplibre-gl, react-map-gl,
-// @tanstack/react-query, @developmentseed/stac-react, embla-carousel-react and
-// (dynamically) mapbox-gl-compare at module scope, which drags ~1 MB of map JS
-// into the bundle even though this app only renders card components. Vite
-// aliases those modules here (see vite.config.ts). Rendering a map component
-// with these stubs would break — remove the alias for the map iteration.
+// Build-time stub for veda-ui-blocks dependencies not needed by a given view
+// entry. The package's flat dist/index.js imports every optional dep at module
+// scope, so without a vite alias (see vite.config.ts) they all land in every
+// bundle. The map entry stubs only mapbox-gl-compare (StacCompareMap) and
+// embla-carousel-react (Carousel); the picker/items entries additionally stub
+// the map stack (maplibre-gl, react-map-gl, react-query, stac-react).
+// Rendering a component whose deps are stubbed breaks — the entry must not
+// mount it.
 export default {};
 export const Layer = undefined;
 export const Map = undefined;
