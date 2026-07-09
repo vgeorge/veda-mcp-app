@@ -25,53 +25,71 @@ Scaffold only. Wired hello-world proving the `tool -> resource -> UI` loop:
 - `@modelcontextprotocol/ext-apps` + `@modelcontextprotocol/sdk`
 - React 19
 - Vite + `vite-plugin-singlefile` (bundles the UI into one HTML file)
-- `tsx` to run the TypeScript server
-- pnpm
+- `tsx` (dev) / compiled `node` (production) to run the TypeScript server
+- npm
 
-## Develop
+## Quick start (clone and go)
 
 ```bash
-pnpm install
-pnpm build          # typecheck + build single-file UI + compile server to dist/
-pnpm serve:stdio    # run the MCP server over stdio (via tsx, from source)
+git clone <repo-url> veda-mcp-app
+cd veda-mcp-app
+npm install          # auto-builds dist/ (via the "prepare" script)
+npm run setup:claude # registers the server with Claude Desktop + Claude Code
 ```
 
-`pnpm build` produces:
+Then restart Claude Desktop (Claude Code picks it up on next launch), open a
+chat, and ask it to call the VEDA catalog tool.
+
+`npm install` runs the `prepare` script, which builds:
 
 - `dist/mcp-app.html` — the bundled UI resource (served at runtime).
-- `dist/main.js` + `dist/server.js` — the compiled server, runnable with plain
-  `node dist/main.js --stdio` (no tsx). This is what Claude Desktop uses.
+- `dist/main.js` + `dist/server.js` — the compiled server, run with plain
+  `node dist/main.js --stdio` (no tsx). This is what the Claude hosts launch.
 
-`pnpm serve` runs the server over HTTP (default `http://localhost:3001/mcp`)
-instead of stdio.
+After any code change: `npm run build`, then restart the host.
 
-## Inspect in Claude Desktop
+## `setup:claude`
 
-Claude Desktop is the primary host for this app (native MCP Apps support, stdio
-transport).
+`npm run setup:claude` computes absolute paths and registers the server so no
+manual config editing is needed. It:
 
-1. `pnpm build` (produces `dist/main.js`, `dist/server.js`, and
-   `dist/mcp-app.html`).
-2. Add the server to `claude_desktop_config.json`
-   (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS).
-   Use the compiled entry with plain `node` and an **absolute** path (this build
-   of Claude Desktop ignores `cwd`):
+- Merges an entry into Claude Desktop's `claude_desktop_config.json` (per-OS
+  path), leaving any other servers untouched.
+- Runs `claude mcp add ... -s user` for Claude Code (skipped if the `claude` CLI
+  is not installed).
 
-   ```json
-   {
-     "mcpServers": {
-       "veda-mcp-app": {
-         "command": "node",
-         "args": [
-           "/absolute/path/to/apps/veda-mcp-app/dist/main.js",
-           "--stdio"
-         ]
-       }
-     }
-   }
-   ```
+Flags:
 
-3. Restart Claude Desktop, invoke the tool in a chat, and confirm the React UI
-   renders the collection list inline.
+- `--print` — dry run; show what would change without writing.
+- `--remove` — unregister from both hosts.
+- `--desktop-only` / `--code-only` — target a single host.
 
-Rebuild (`pnpm build`) and restart Claude Desktop after any code change.
+The generated command uses the **absolute** path to the node that ran the setup
+script plus the absolute `dist/main.js` path (this build of Claude Desktop
+ignores the config `cwd` field). If you switch node versions, re-run
+`npm run setup:claude`.
+
+## Other scripts
+
+- `npm start` — build, then run the server over HTTP
+  (`http://localhost:3001/mcp`) for manual testing outside a host.
+- `npm run serve:stdio` — run over stdio from source (via tsx).
+- `npm run dev` — watch-rebuild the UI and run the HTTP server.
+
+## Manual host config
+
+Prefer `setup:claude`, but the equivalent manual entry is:
+
+```json
+{
+  "mcpServers": {
+    "veda-mcp-app": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/veda-mcp-app/dist/main.js",
+        "--stdio"
+      ]
+    }
+  }
+}
+```

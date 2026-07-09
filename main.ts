@@ -1,7 +1,9 @@
+#!/usr/bin/env node
 /**
  * Entry point for running the MCP server.
- * Run with: npx @modelcontextprotocol/server-basic-react
- * Or: node dist/index.js [--stdio]
+ * Run compiled: node dist/main.js [--stdio]
+ * Or from source: tsx main.ts [--stdio]
+ * Pass --stdio for stdio transport (used by Claude Desktop); otherwise HTTP.
  */
 
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";

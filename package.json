@@ -5,15 +5,19 @@
   "type": "module",
   "description": "MCP App (Apps SDK) for interacting with a VEDA STAC catalog. Scaffold: wired hello-world tool + React UI resource.",
   "license": "MIT",
+  "bin": {
+    "veda-mcp-app": "dist/main.js"
+  },
   "scripts": {
-    "build": "tsc --noEmit && cross-env INPUT=mcp-app.html vite build && pnpm build:server",
+    "build": "tsc --noEmit && cross-env INPUT=mcp-app.html vite build && npm run build:server",
     "build:server": "tsc -p tsconfig.server.json",
+    "prepare": "npm run build",
     "watch": "cross-env INPUT=mcp-app.html vite build --watch",
     "serve": "tsx --watch main.ts",
     "serve:stdio": "tsx main.ts --stdio",
-    "start": "cross-env NODE_ENV=development pnpm build && pnpm serve",
-    "start:stdio": "cross-env NODE_ENV=development pnpm build 1>&2 && pnpm serve:stdio",
-    "dev": "cross-env NODE_ENV=development concurrently \"pnpm watch\" \"pnpm serve\""
+    "start": "npm run build && npm run serve",
+    "setup:claude": "node scripts/setup-claude.mjs",
+    "dev": "cross-env NODE_ENV=development concurrently \"npm run watch\" \"npm run serve\""
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.0",
