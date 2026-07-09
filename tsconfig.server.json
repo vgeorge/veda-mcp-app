@@ -4,8 +4,6 @@
     "lib": ["ES2022"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "declaration": true,
-    "emitDeclarationOnly": true,
     "outDir": "./dist",
     "rootDir": ".",
     "strict": true,
@@ -13,5 +11,5 @@
     "esModuleInterop": true,
     "resolveJsonModule": true
   },
-  "include": ["server.ts"]
+  "include": ["main.ts", "server.ts"]
 }

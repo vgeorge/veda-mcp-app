@@ -6,7 +6,8 @@
   "description": "MCP App (Apps SDK) for interacting with a VEDA STAC catalog. Scaffold: wired hello-world tool + React UI resource.",
   "license": "MIT",
   "scripts": {
-    "build": "tsc --noEmit && cross-env INPUT=mcp-app.html vite build",
+    "build": "tsc --noEmit && cross-env INPUT=mcp-app.html vite build && pnpm build:server",
+    "build:server": "tsc -p tsconfig.server.json",
     "watch": "cross-env INPUT=mcp-app.html vite build --watch",
     "serve": "tsx --watch main.ts",
     "serve:stdio": "tsx main.ts --stdio",

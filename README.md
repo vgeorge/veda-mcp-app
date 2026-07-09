@@ -32,9 +32,15 @@ Scaffold only. Wired hello-world proving the `tool -> resource -> UI` loop:
 
 ```bash
 pnpm install
-pnpm build          # typecheck + build single-file UI into dist/mcp-app.html
-pnpm serve:stdio    # run the MCP server over stdio
+pnpm build          # typecheck + build single-file UI + compile server to dist/
+pnpm serve:stdio    # run the MCP server over stdio (via tsx, from source)
 ```
+
+`pnpm build` produces:
+
+- `dist/mcp-app.html` — the bundled UI resource (served at runtime).
+- `dist/main.js` + `dist/server.js` — the compiled server, runnable with plain
+  `node dist/main.js --stdio` (no tsx). This is what Claude Desktop uses.
 
 `pnpm serve` runs the server over HTTP (default `http://localhost:3001/mcp`)
 instead of stdio.
@@ -44,18 +50,22 @@ instead of stdio.
 Claude Desktop is the primary host for this app (native MCP Apps support, stdio
 transport).
 
-1. `pnpm build` (produces `dist/mcp-app.html`, which the server serves as the UI
-   resource).
+1. `pnpm build` (produces `dist/main.js`, `dist/server.js`, and
+   `dist/mcp-app.html`).
 2. Add the server to `claude_desktop_config.json`
-   (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+   (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS).
+   Use the compiled entry with plain `node` and an **absolute** path (this build
+   of Claude Desktop ignores `cwd`):
 
    ```json
    {
      "mcpServers": {
        "veda-mcp-app": {
-         "command": "pnpm",
-         "args": ["serve:stdio"],
-         "cwd": "/absolute/path/to/apps/veda-mcp-app"
+         "command": "node",
+         "args": [
+           "/absolute/path/to/apps/veda-mcp-app/dist/main.js",
+           "--stdio"
+         ]
        }
      }
    }
@@ -63,3 +73,5 @@ transport).
 
 3. Restart Claude Desktop, invoke the tool in a chat, and confirm the React UI
    renders the collection list inline.
+
+Rebuild (`pnpm build`) and restart Claude Desktop after any code change.
