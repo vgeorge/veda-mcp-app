@@ -20,32 +20,12 @@ function VedaCatalogApp() {
   const [toolResult, setToolResult] = useState<CallToolResult | null>(null);
   const [hostContext, setHostContext] = useState<McpUiHostContext | undefined>();
 
-  // `useApp` (1) creates an `App` instance, (2) calls `onAppCreated` to
-  // register handlers, and (3) calls `connect()` on the `App` instance.
   const { app, error } = useApp({
     appInfo: { name: "VEDA MCP App", version: "0.1.0" },
     capabilities: {},
     onAppCreated: (app) => {
-      app.onteardown = async () => {
-        console.info("App is being torn down");
-        return {};
-      };
-
-      app.ontoolinput = async (input) => {
-        console.info("Received tool call input:", input);
-      };
-
-      app.ontoolresult = async (result) => {
-        console.info("Received tool call result:", result);
-        setToolResult(result);
-      };
-
-      app.ontoolcancelled = (params) => {
-        console.info("Tool call cancelled:", params.reason);
-      };
-
+      app.ontoolresult = async (result) => setToolResult(result);
       app.onerror = console.error;
-
       app.onhostcontextchanged = (params) => {
         setHostContext((prev) => ({ ...prev, ...params }));
       };
@@ -80,7 +60,6 @@ function VedaCatalogAppInner({ app, toolResult, hostContext }: VedaCatalogAppInn
 
   const handleRefresh = useCallback(async () => {
     try {
-      console.info("Calling veda_catalog_hello tool...");
       const result = await app.callServerTool({ name: "veda_catalog_hello", arguments: {} });
       setCollections(extractCollections(result));
     } catch (e) {
