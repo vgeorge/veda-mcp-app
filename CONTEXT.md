@@ -4,7 +4,7 @@ Terms used consistently across code, tests, and reviews. When a module is
 named after a concept, that concept belongs here.
 
 - **Collection** — a VEDA STAC dataset (e.g. `no2-monthly`). Summarized on the
-  wire as id + title.
+  wire as id + title + description (nullable).
 - **Item** — a dated scene inside a Collection, carrying a raster preview and
   a COG asset.
 - **Dashboard Render** — a Collection's `renders.dashboard` styling params

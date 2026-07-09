@@ -14,11 +14,17 @@ describe("parseView", () => {
   it("parses a collections view", () => {
     const view = parseView({
       kind: "collections",
-      collections: [{ id: "no2-monthly", title: "NO2" }],
+      collections: [
+        { id: "no2-monthly", title: "NO2", description: "Nitrogen dioxide" },
+        { id: "hls-swir", title: "HLS SWIR", description: null },
+      ],
     });
     expect(view).toEqual({
       kind: "collections",
-      collections: [{ id: "no2-monthly", title: "NO2" }],
+      collections: [
+        { id: "no2-monthly", title: "NO2", description: "Nitrogen dioxide" },
+        { id: "hls-swir", title: "HLS SWIR", description: null },
+      ],
     });
   });
 

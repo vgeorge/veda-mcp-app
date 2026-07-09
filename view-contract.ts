@@ -11,6 +11,7 @@ import { z } from "zod";
 const CollectionViewSchema = z.object({
   id: z.string(),
   title: z.string(),
+  description: z.string().nullable(),
 });
 
 const ItemViewSchema = z.object({

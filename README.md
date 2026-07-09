@@ -5,8 +5,9 @@ linked to an interactive single-file React UI resource, rendered in a host like
 Claude Desktop.
 
 Searches the live VEDA STAC API (`https://dev.openveda.cloud/api/stac`, override
-with `VEDA_STAC_ROOT`) and renders results — including item preview thumbnails —
-in the UI. A `veda-ui-blocks` raster map (from each item's COG asset) comes later.
+with `VEDA_STAC_ROOT`) and renders results with `@teamimpact/veda-ui-blocks`
+cards — collections as CardCTA, items as CardDetailed with raster preview
+thumbnails. A `veda-ui-blocks` raster map (from each item's COG asset) comes later.
 
 ## Tools
 
@@ -36,3 +37,13 @@ Restart Claude Desktop (Claude Code picks it up on next launch), then ask it to
 - `npm run build` — typecheck + build UI + compile server to `dist/`.
 - `npm start` — run over HTTP (`http://localhost:3001/mcp`) for manual testing.
 - `npm run serve:stdio` / `npm run dev` — stdio from source / watch mode.
+
+## UI preview harness
+
+`preview.html` renders the collections/items views with fixture data outside
+the MCP host, for inspecting card layout in a plain browser:
+
+```bash
+INPUT=mcp-app.html npx vite --port 3006
+# open http://localhost:3006/preview.html
+```

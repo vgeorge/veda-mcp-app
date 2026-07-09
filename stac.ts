@@ -17,6 +17,7 @@ export const RASTER_HOST = new URL(RASTER_ROOT).origin;
 export interface CollectionSummary {
   id: string;
   title: string;
+  description: string | null;
 }
 
 export interface ItemSummary {
@@ -38,11 +39,13 @@ export interface ListItemsOptions {
 // the many optional STAC fields we ignore.
 const AssetSchema = z.object({ href: z.string().optional() }).passthrough();
 
+// title/description are nullish: the live catalog has collections with
+// explicit `title: null`, which must not be dropped as malformed.
 const CollectionSchema = z
   .object({
     id: z.string(),
-    title: z.string().optional(),
-    description: z.string().optional(),
+    title: z.string().nullish(),
+    description: z.string().nullish(),
   })
   .passthrough();
 
@@ -99,8 +102,8 @@ let collectionsCache: { at: number; items: ParsedCollection[] } | null = null;
 
 interface ParsedCollection {
   id: string;
-  title?: string;
-  description?: string;
+  title?: string | null;
+  description?: string | null;
 }
 
 // Test-only: clear all caches.
@@ -234,9 +237,11 @@ export async function searchCollections(
       )
     : parsed;
 
-  return matched
-    .slice(0, limit)
-    .map((c) => ({ id: c.id, title: c.title ?? c.id }));
+  return matched.slice(0, limit).map((c) => ({
+    id: c.id,
+    title: c.title ?? c.id,
+    description: c.description ?? null,
+  }));
 }
 
 export async function listItems(

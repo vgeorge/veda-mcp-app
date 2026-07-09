@@ -4,7 +4,9 @@ import { useApp } from "@modelcontextprotocol/ext-apps/react";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { StrictMode, useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { parseView, type CollectionView, type ItemView, type View } from "../view-contract";
+import "@teamimpact/veda-ui-blocks/default.css";
+import { parseView, type View } from "../view-contract";
+import { CollectionsView, ItemsView } from "./views";
 import styles from "./mcp-app.module.css";
 
 function VedaCatalogApp() {
@@ -99,61 +101,11 @@ function VedaCatalogAppInner({ app, toolResult, hostContext }: VedaCatalogAppInn
       {view?.kind === "collections" && (
         <CollectionsView collections={view.collections} busy={busy} onOpen={(id) => call("list_items", { collectionId: id })} />
       )}
-      {view?.kind === "items" && <ItemsView collectionId={view.collectionId} items={view.items} />}
+      {view?.kind === "items" && (
+        <ItemsView collectionId={view.collectionId} items={view.items} demo={view.demo ?? false} />
+      )}
       {!view && !error && <p className={styles.notice}>Run the demo or browse collections to start.</p>}
     </main>
-  );
-}
-
-function CollectionsView({
-  collections,
-  busy,
-  onOpen,
-}: {
-  collections: CollectionView[];
-  busy: boolean;
-  onOpen: (id: string) => void;
-}) {
-  if (collections.length === 0) return <p>No collections found.</p>;
-  return (
-    <ul className={styles.list}>
-      {collections.map((c) => (
-        <li key={c.id}>
-          <span className={styles.collectionId}>{c.id}</span>
-          <div>{c.title}</div>
-          <button className={styles.linkButton} onClick={() => onOpen(c.id)} disabled={busy}>
-            List items
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function ItemsView({ collectionId, items }: { collectionId: string; items: ItemView[] }) {
-  return (
-    <div>
-      <h2 className={styles.subhead}>{collectionId}</h2>
-      {items.length === 0 ? (
-        <p>No items found.</p>
-      ) : (
-        <ul className={styles.list}>
-          {items.map((item) => (
-            <li key={item.id} className={styles.item}>
-              {item.previewHref && (
-                <img className={styles.thumb} src={item.previewHref} alt={item.id} loading="lazy" />
-              )}
-              <div>
-                <span className={styles.collectionId}>{item.id}</span>
-                <div className={styles.dateRange}>
-                  {item.start ?? "?"} &rarr; {item.end ?? "?"}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   );
 }
 

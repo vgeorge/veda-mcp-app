@@ -33,6 +33,7 @@ const COLLECTIONS = {
     { id: "no2-monthly", title: "NO2", description: "Nitrogen dioxide" },
     { id: "nightlights-hd-monthly", title: "Nightlights" },
     { id: "hls-swir", title: "HLS SWIR" },
+    { id: "geos-cf-ana", title: null }, // live catalog has explicit null titles
     { title: "missing id" }, // malformed: no id
   ],
 };
@@ -102,13 +103,16 @@ describe("searchCollections", () => {
       "no2-monthly",
       "nightlights-hd-monthly",
       "hls-swir",
+      "geos-cf-ana",
     ]);
   });
 
   it("filters by case-insensitive substring on id/title/description", async () => {
     mockFetch(COLLECTIONS);
     const result = await searchCollections("nitrogen");
-    expect(result).toEqual([{ id: "no2-monthly", title: "NO2" }]);
+    expect(result).toEqual([
+      { id: "no2-monthly", title: "NO2", description: "Nitrogen dioxide" },
+    ]);
   });
 
   it("caps results to the limit", async () => {
@@ -120,7 +124,13 @@ describe("searchCollections", () => {
   it("falls back to id when title is absent", async () => {
     mockFetch(COLLECTIONS);
     const result = await searchCollections("hls");
-    expect(result).toEqual([{ id: "hls-swir", title: "HLS SWIR" }]);
+    expect(result).toEqual([{ id: "hls-swir", title: "HLS SWIR", description: null }]);
+  });
+
+  it("keeps collections with an explicit null title, falling back to id", async () => {
+    mockFetch(COLLECTIONS);
+    const result = await searchCollections("geos-cf");
+    expect(result).toEqual([{ id: "geos-cf-ana", title: "geos-cf-ana", description: null }]);
   });
 });
 
