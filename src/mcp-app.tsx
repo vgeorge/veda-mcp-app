@@ -1,4 +1,4 @@
-// Scaffold UI: renders the placeholder collection list from `veda_catalog_hello`.
+// Renders VEDA STAC results from the search_collections / list_items / run_demo tools.
 import type { App, McpUiHostContext } from "@modelcontextprotocol/ext-apps";
 import { useApp } from "@modelcontextprotocol/ext-apps/react";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
@@ -11,9 +11,31 @@ interface Collection {
   title: string;
 }
 
-function extractCollections(result: CallToolResult): Collection[] {
-  const structured = result.structuredContent as { collections?: Collection[] } | undefined;
-  return structured?.collections ?? [];
+interface Item {
+  id: string;
+  start: string | null;
+  end: string | null;
+  previewHref: string | null;
+}
+
+type View =
+  | { kind: "collections"; collections: Collection[] }
+  | { kind: "items"; collectionId: string; items: Item[] }
+  | null;
+
+function extractView(result: CallToolResult): View {
+  const sc = result.structuredContent as Record<string, unknown> | undefined;
+  if (sc?.kind === "collections") {
+    return { kind: "collections", collections: (sc.collections as Collection[]) ?? [] };
+  }
+  if (sc?.kind === "items") {
+    return {
+      kind: "items",
+      collectionId: (sc.collectionId as string) ?? "",
+      items: (sc.items as Item[]) ?? [],
+    };
+  }
+  return null;
 }
 
 function VedaCatalogApp() {
@@ -50,22 +72,32 @@ interface VedaCatalogAppInnerProps {
   hostContext?: McpUiHostContext;
 }
 function VedaCatalogAppInner({ app, toolResult, hostContext }: VedaCatalogAppInnerProps) {
-  const [collections, setCollections] = useState<Collection[]>([]);
+  const [view, setView] = useState<View>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (toolResult) {
-      setCollections(extractCollections(toolResult));
+      setView(extractView(toolResult));
     }
   }, [toolResult]);
 
-  const handleRefresh = useCallback(async () => {
-    try {
-      const result = await app.callServerTool({ name: "veda_catalog_hello", arguments: {} });
-      setCollections(extractCollections(result));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [app]);
+  const call = useCallback(
+    async (name: string, args: Record<string, unknown>) => {
+      setBusy(true);
+      setError(null);
+      try {
+        const result = await app.callServerTool({ name, arguments: args });
+        setView(extractView(result));
+      } catch (e) {
+        console.error(e);
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [app],
+  );
 
   return (
     <main
@@ -78,24 +110,76 @@ function VedaCatalogAppInner({ app, toolResult, hostContext }: VedaCatalogAppInn
       }}
     >
       <h1>VEDA MCP App</h1>
-      <p className={styles.notice}>Scaffold placeholder. STAC search and map coming soon.</p>
 
-      <div className={styles.action}>
-        {collections.length === 0 ? (
-          <p>No collections yet.</p>
-        ) : (
-          <ul className={styles.list}>
-            {collections.map((c) => (
-              <li key={c.id}>
-                <span className={styles.collectionId}>{c.id}</span>
-                <div>{c.title}</div>
-              </li>
-            ))}
-          </ul>
-        )}
-        <button onClick={handleRefresh}>Load collections</button>
+      <div className={styles.toolbar}>
+        <button onClick={() => call("run_demo", {})} disabled={busy}>
+          Run demo
+        </button>
+        <button onClick={() => call("search_collections", {})} disabled={busy}>
+          Browse collections
+        </button>
       </div>
+
+      {error && <p className={styles.error}>{error}</p>}
+
+      {view?.kind === "collections" && (
+        <CollectionsView collections={view.collections} busy={busy} onOpen={(id) => call("list_items", { collectionId: id })} />
+      )}
+      {view?.kind === "items" && <ItemsView collectionId={view.collectionId} items={view.items} />}
+      {!view && !error && <p className={styles.notice}>Run the demo or browse collections to start.</p>}
     </main>
+  );
+}
+
+function CollectionsView({
+  collections,
+  busy,
+  onOpen,
+}: {
+  collections: Collection[];
+  busy: boolean;
+  onOpen: (id: string) => void;
+}) {
+  if (collections.length === 0) return <p>No collections found.</p>;
+  return (
+    <ul className={styles.list}>
+      {collections.map((c) => (
+        <li key={c.id}>
+          <span className={styles.collectionId}>{c.id}</span>
+          <div>{c.title}</div>
+          <button className={styles.linkButton} onClick={() => onOpen(c.id)} disabled={busy}>
+            List items
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ItemsView({ collectionId, items }: { collectionId: string; items: Item[] }) {
+  return (
+    <div>
+      <h2 className={styles.subhead}>{collectionId}</h2>
+      {items.length === 0 ? (
+        <p>No items found.</p>
+      ) : (
+        <ul className={styles.list}>
+          {items.map((item) => (
+            <li key={item.id} className={styles.item}>
+              {item.previewHref && (
+                <img className={styles.thumb} src={item.previewHref} alt={item.id} loading="lazy" />
+              )}
+              <div>
+                <span className={styles.collectionId}>{item.id}</span>
+                <div className={styles.dateRange}>
+                  {item.start ?? "?"} &rarr; {item.end ?? "?"}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
