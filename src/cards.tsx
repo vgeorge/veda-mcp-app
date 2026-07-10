@@ -67,7 +67,7 @@ export function CollectionCard({ collection, busy, onPick }: CollectionCardProps
       description={collection.description ?? collection.id}
       tagPrimary={coverage ? <Tag>{coverage}</Tag> : undefined}
       callToAction={{
-        label: "Pick this dataset",
+        label: "Select",
         as: "button",
         type: "button",
         variant: "button",

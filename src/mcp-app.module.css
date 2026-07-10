@@ -1,6 +1,8 @@
 .main {
   width: 100%;
   box-sizing: border-box;
+  /* Outer gutter matches the inter-card gap so the list is framed evenly. */
+  padding: var(--spacing-md);
 
   > * {
     margin-top: 0;
