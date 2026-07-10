@@ -17,6 +17,7 @@ import {
 } from "./stac.js";
 import {
   CollectionsViewSchema,
+  CompareViewSchema,
   ItemsViewSchema,
   MapViewSchema,
   type View,
@@ -119,6 +120,52 @@ async function mapResult(
   };
   return viewResult(
     `Map of ${config.collectionTitle} (${config.collectionId}), ${config.dateRange.from} to ${config.dateRange.to}.`,
+    view,
+  );
+}
+
+// Resolve each side with the same getMapConfig the single-layer map uses; the
+// two calls are independent so they run in parallel. A MapConfigError on either
+// side surfaces that side's corrective message — the agent only fixes the bad
+// side. bbox comes from the left side for the initial camera.
+async function compareResult(
+  leftCollectionId: string,
+  leftDatetime: string,
+  rightCollectionId: string,
+  rightDatetime: string,
+): Promise<CallToolResult> {
+  let left, right;
+  try {
+    [left, right] = await Promise.all([
+      getMapConfig(leftCollectionId, leftDatetime),
+      getMapConfig(rightCollectionId, rightDatetime),
+    ]);
+  } catch (e) {
+    if (e instanceof MapConfigError) {
+      return { content: [{ type: "text", text: e.message }], isError: true };
+    }
+    throw e;
+  }
+  const view: View = {
+    kind: "compare",
+    left: {
+      collectionId: left.collectionId,
+      collectionTitle: left.collectionTitle,
+      renderKey: left.renderKey,
+      dateRange: left.dateRange,
+    },
+    right: {
+      collectionId: right.collectionId,
+      collectionTitle: right.collectionTitle,
+      renderKey: right.renderKey,
+      dateRange: right.dateRange,
+    },
+    bbox: left.bbox,
+    stacRoot: STAC_ROOT,
+    rasterRoot: RASTER_ROOT,
+  };
+  return viewResult(
+    `Comparing ${left.collectionTitle} (${left.dateRange.from}–${left.dateRange.to}) vs ${right.collectionTitle} (${right.dateRange.from}–${right.dateRange.to}).`,
     view,
   );
 }
@@ -231,6 +278,25 @@ export function createServer(): McpServer {
     },
     async (): Promise<CallToolResult> =>
       mapResult(DEMO_COLLECTION, "2020-01-01/2021-12-31", true),
+  );
+
+  registerAppTool(server,
+    "compare_map",
+    {
+      title: "Compare two collection maps",
+      description:
+        'Render a swipe-compare of two raster layers side by side. Pass the SAME collectionId with two date ranges for a before/after (e.g. NO2 in 2020 vs 2021), or two different collectionIds for a cross-dataset comparison. Resolve collection ids with search_collections first when the user names a phenomenon (e.g. "NO2" -> no2-monthly).',
+      inputSchema: {
+        leftCollectionId: z.string().describe("STAC collection id for the left panel"),
+        leftDatetime: z.string().describe('Left panel date or range: "YYYY-MM-DD" or "YYYY-MM-DD/YYYY-MM-DD"'),
+        rightCollectionId: z.string().describe("STAC collection id for the right panel"),
+        rightDatetime: z.string().describe('Right panel date or range: "YYYY-MM-DD" or "YYYY-MM-DD/YYYY-MM-DD"'),
+      },
+      outputSchema: CompareViewSchema.shape,
+      _meta: { ui: { resourceUri: MAP_URI } },
+    },
+    async ({ leftCollectionId, leftDatetime, rightCollectionId, rightDatetime }): Promise<CallToolResult> =>
+      compareResult(leftCollectionId, leftDatetime, rightCollectionId, rightDatetime),
   );
 
   // Picker cards load collection cover thumbnails (img-src).

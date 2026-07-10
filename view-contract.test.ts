@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseCollectionsView,
   parseItemsView,
+  parseMapResourceView,
   parseMapView,
 } from "./view-contract.js";
 
@@ -105,5 +106,41 @@ describe("parseMapView", () => {
   it("throws on a map view missing its date range", () => {
     const { dateRange: _dateRange, ...withoutRange } = MAP;
     expect(() => parseMapView(withoutRange)).toThrow(/dateRange/);
+  });
+});
+
+const COMPARE = {
+  kind: "compare",
+  left: {
+    collectionId: "no2-monthly-diff",
+    collectionTitle: "NO2 2019",
+    renderKey: "dashboard",
+    dateRange: { from: "2019-01-01", to: "2019-12-31" },
+  },
+  right: {
+    collectionId: "no2-monthly-diff",
+    collectionTitle: "NO2 2021",
+    renderKey: "dashboard",
+    dateRange: { from: "2021-01-01", to: "2021-12-31" },
+  },
+  bbox: [-180, -90, 180, 90],
+  stacRoot: "https://dev.openveda.cloud/api/stac",
+  rasterRoot: "https://dev.openveda.cloud/api/raster",
+};
+
+describe("parseMapResourceView", () => {
+  it("parses the single-layer (map) variant", () => {
+    expect(parseMapResourceView(MAP)).toEqual(MAP);
+  });
+
+  it("parses the compare variant", () => {
+    expect(parseMapResourceView(COMPARE)).toEqual(COMPARE);
+  });
+
+  it("throws on a compare view missing a side", () => {
+    const { right: _right, ...withoutRight } = COMPARE;
+    expect(() => parseMapResourceView(withoutRight)).toThrow(
+      /Unexpected result from server/,
+    );
   });
 });

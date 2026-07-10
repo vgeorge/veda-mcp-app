@@ -1,13 +1,15 @@
-// Single-layer raster map of a collection over a date range, rendered with
-// veda-ui-blocks. MCP-free so the preview harness can render it standalone.
-// No header bar: the in-map legend already surfaces the dataset info pulled
-// from STAC, so title/dates above the map would just duplicate it.
+// Raster map rendered with veda-ui-blocks. MCP-free so the preview harness can
+// render it standalone. Renders the single-layer variant for kind "map" and the
+// swipe-compare variant for kind "compare". No header bar: the in-map legend
+// already surfaces the dataset info pulled from STAC, so title/dates above the
+// map would just duplicate it.
 import {
   CARTO_DARK_WITH_LABELS_BASEMAP_STYLE,
   GeoConfigProvider,
+  StacCompareMap,
   StacSingleLayerMap,
 } from "@teamimpact/veda-ui-blocks";
-import type { MapView as MapViewData } from "../view-contract";
+import type { CompareView, MapView as MapViewData } from "../view-contract";
 import styles from "./mcp-app.module.css";
 
 // Rough camera fit for the collection's spatial extent in the ~425px panel:
@@ -23,21 +25,41 @@ function viewStateFromBbox(bbox: number[] | null) {
   };
 }
 
-export function MapView({ view }: { view: MapViewData }) {
+export function MapView({ view }: { view: MapViewData | CompareView }) {
   return (
     <GeoConfigProvider stacApiUrl={view.stacRoot} titilerBaseUrl={view.rasterRoot}>
       <div className={styles.mapPanel}>
-        <StacSingleLayerMap
-          baseMapStyle={CARTO_DARK_WITH_LABELS_BASEMAP_STYLE}
-          initialViewState={viewStateFromBbox(view.bbox)}
-          showScrollGuard
-          layerConfig={{
-            type: "raster",
-            collectionId: view.collectionId,
-            collectionAssetId: view.renderKey,
-            dateRange: view.dateRange,
-          }}
-        />
+        {view.kind === "map" ? (
+          <StacSingleLayerMap
+            baseMapStyle={CARTO_DARK_WITH_LABELS_BASEMAP_STYLE}
+            initialViewState={viewStateFromBbox(view.bbox)}
+            showScrollGuard
+            layerConfig={{
+              type: "raster",
+              collectionId: view.collectionId,
+              collectionAssetId: view.renderKey,
+              dateRange: view.dateRange,
+            }}
+          />
+        ) : (
+          <StacCompareMap
+            baseMapStyle={CARTO_DARK_WITH_LABELS_BASEMAP_STYLE}
+            initialViewState={viewStateFromBbox(view.bbox)}
+            showScrollGuard
+            leftLayerConfig={{
+              type: "raster",
+              collectionId: view.left.collectionId,
+              collectionAssetId: view.left.renderKey,
+              dateRange: view.left.dateRange,
+            }}
+            rightLayerConfig={{
+              type: "raster",
+              collectionId: view.right.collectionId,
+              collectionAssetId: view.right.renderKey,
+              dateRange: view.right.dateRange,
+            }}
+          />
+        )}
       </div>
     </GeoConfigProvider>
   );

@@ -2,7 +2,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@teamimpact/veda-ui-blocks/default.css";
-import { parseMapView } from "../view-contract";
+import { parseMapResourceView } from "../view-contract";
 import { MapView } from "./map-view";
 import styles from "./mcp-app.module.css";
 import { safeAreaStyle, useViewResult } from "./use-view-result";
@@ -11,7 +11,7 @@ import { DebugDetails } from "./views";
 function MapApp() {
   const { view, error, debug, connecting, hostContext } = useViewResult(
     "VEDA Map",
-    parseMapView,
+    parseMapResourceView,
   );
 
   if (connecting) return <div>Connecting...</div>;

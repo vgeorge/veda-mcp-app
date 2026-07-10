@@ -6,7 +6,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@teamimpact/veda-ui-blocks/default.css";
-import type { CollectionView, ItemView, MapView as MapViewData } from "../view-contract";
+import type { CollectionView, CompareView, ItemView, MapView as MapViewData } from "../view-contract";
 import { MapView } from "./map-view";
 import styles from "./mcp-app.module.css";
 import { CollectionsView, ItemsView } from "./views";
@@ -95,11 +95,32 @@ const MAP_VIEW: MapViewData = {
   demo: true,
 };
 
+// Live fixture: before/after of the same collection via the compare map.
+const COMPARE_VIEW: CompareView = {
+  kind: "compare",
+  left: {
+    collectionId: "no2-monthly-diff",
+    collectionTitle: "NO₂ (Diff) 2019",
+    renderKey: "dashboard",
+    dateRange: { from: "2019-01-01", to: "2019-12-31" },
+  },
+  right: {
+    collectionId: "no2-monthly-diff",
+    collectionTitle: "NO₂ (Diff) 2021",
+    renderKey: "dashboard",
+    dateRange: { from: "2021-01-01", to: "2021-12-31" },
+  },
+  bbox: [-180, -90, 180, 90],
+  stacRoot: "https://dev.openveda.cloud/api/stac",
+  rasterRoot: "https://dev.openveda.cloud/api/raster",
+};
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <main className={styles.main}>
       <h1>VEDA MCP App views</h1>
       <MapView view={MAP_VIEW} />
+      <MapView view={COMPARE_VIEW} />
       <CollectionsView
         collections={COLLECTIONS}
         busy={false}

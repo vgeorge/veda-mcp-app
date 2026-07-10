@@ -29,6 +29,11 @@ MapLibre, Carto dark basemap).
   the host resolves "NO2" to a collection via `search_collections`, then calls
   this. Collections whose `renders` metadata can't tile (stale asset names,
   object-valued params) are rejected with a corrective error.
+- `compare_map(leftCollectionId, leftDatetime, rightCollectionId, rightDatetime)`
+  — swipe-compare of two raster layers. Same `collectionId` with two date ranges
+  = before/after (e.g. NO2 2019 vs 2021); two different `collectionId`s =
+  cross-dataset. Reuses the map view; a non-mappable side returns a corrective
+  error naming that side only.
 - `run_demo()` — happy path: map of `no2-monthly-diff` (Nitrogen Dioxide
   difference) for 2020-2021. Ask the host to "run a demo of the VEDA MCP app".
 

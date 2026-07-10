@@ -31,6 +31,12 @@ named after a concept, that concept belongs here.
   iframe should call. A Collection is *mappable* only when its render params
   are titiler-serializable and its render asset exists on the items
   (`getMapConfig` guards both).
+- **Compare View** — a swipe-compare of two raster layers (same Collection + two
+  date ranges for a before/after, or two Collections for cross-dataset),
+  rendered by veda-ui-blocks `StacCompareMap`. Each side is resolved
+  independently via `getMapConfig`; the map resource renders both this and the
+  Map View, dispatched by the `kind` field (`"compare"` vs `"map"`). The left
+  side's spatial extent sets the initial camera.
 - **View Contract** (`view-contract.ts`) — the single declaration of the View
   wire shape, shared by server (write side, compile-time via inferred types)
   and UI (read side, runtime via `parseView`). Unknown keys are stripped so an

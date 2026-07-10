@@ -21,11 +21,13 @@ const VEDA_UI_BLOCKS_STUB = path.resolve(
 const NEEDS_MAP = ["map.html", "preview.html"].includes(INPUT);
 
 const STUBS: Record<string, string> = {
-  "mapbox-gl-compare": VEDA_UI_BLOCKS_STUB,
   "embla-carousel-react": VEDA_UI_BLOCKS_STUB,
   ...(NEEDS_MAP
     ? {}
     : {
+        // StacCompareMap (mapbox-gl-compare) is only mounted by the map entry;
+        // the picker/items entries don't render it, so they stub it.
+        "mapbox-gl-compare": VEDA_UI_BLOCKS_STUB,
         "maplibre-gl": VEDA_UI_BLOCKS_STUB,
         "react-map-gl/maplibre": VEDA_UI_BLOCKS_STUB,
         "@tanstack/react-query": VEDA_UI_BLOCKS_STUB,
