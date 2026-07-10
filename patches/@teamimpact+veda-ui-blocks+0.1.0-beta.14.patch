@@ -1,0 +1,13 @@
+diff --git a/node_modules/@teamimpact/veda-ui-blocks/dist/index.js b/node_modules/@teamimpact/veda-ui-blocks/dist/index.js
+index 3247d49..9479c4d 100644
+--- a/node_modules/@teamimpact/veda-ui-blocks/dist/index.js
++++ b/node_modules/@teamimpact/veda-ui-blocks/dist/index.js
+@@ -1126,6 +1126,8 @@ var formatRenderPropertiesToQuery = (renderProperties) => {
+     if (!isDefined(value)) return;
+     if (isArray(value)) {
+       value.map((v) => query.append(key, String(v)));
++    } else if (value !== null && typeof value === "object") {
++      query.append(key, JSON.stringify(value));
+     } else {
+       query.append(key, String(value));
+     }

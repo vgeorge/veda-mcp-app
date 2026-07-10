@@ -341,21 +341,31 @@ function parseDateInterval(datetime: string): { from: string; to: string } {
 
 // Guard against the two systematic ways a collection's `renders` metadata
 // breaks the map component (which forwards render params to titiler verbatim):
-// object-valued params (e.g. `asset_bidx`) serialize as "[object Object]" and
-// 500 the tilejson request; a render `assets` name absent from the actual
-// items (stale metadata, e.g. no2-monthly declares "no2" but items only carry
-// "cog_default") 500s every tile. Both errors are masked by CloudFront as the
-// STAC Browser page, so failing fast here with a corrective message is the
-// only useful signal. The item probe is best-effort: on fetch failure the
-// check is skipped rather than blocking the map.
+// object-valued params that aren't JSON-serializable to a titiler-recognized
+// field 500 the tilejson request. `colormap` (a categorical {class: [r,g,b,a]}
+// map, e.g. land-cover classes) IS supported — the widget JSON-stringifies
+// object values — so it's allowed through; other object params (e.g.
+// `asset_bidx`) still aren't, so we fail fast. A render `assets` name absent
+// from the actual items (stale metadata, e.g. no2-monthly declares "no2" but
+// items only carry "cog_default") 500s every tile. Both errors are masked by
+// CloudFront as the STAC Browser page, so failing fast here with a corrective
+// message is the only useful signal. The item probe is best-effort: on fetch
+// failure the check is skipped rather than blocking the map.
 async function assertRenderIsMappable(
   collectionId: string,
   renderKey: string,
   render: unknown,
 ): Promise<void> {
   const params = (render ?? {}) as Record<string, unknown>;
+  // Object params the widget can JSON-encode for titiler. Add more as their
+  // titiler support is verified.
+  const SERIALIZABLE_OBJECT_PARAMS = new Set(["colormap"]);
   const objectParam = Object.entries(params).find(
-    ([, v]) => v !== null && typeof v === "object" && !Array.isArray(v),
+    ([k, v]) =>
+      !SERIALIZABLE_OBJECT_PARAMS.has(k) &&
+      v !== null &&
+      typeof v === "object" &&
+      !Array.isArray(v),
   );
   if (objectParam) {
     throw new MapConfigError(

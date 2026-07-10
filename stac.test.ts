@@ -314,6 +314,27 @@ describe("getMapConfig", () => {
     await expect(getMapConfig("omi", "2020-01-01")).rejects.toThrow(/asset_bidx/);
   });
 
+  it("accepts a render with a categorical colormap object (e.g. land cover)", async () => {
+    // colormap is a {class: [r,g,b,a]} object; the widget JSON-encodes it for
+    // titiler, so it must not be rejected by the object-param guard.
+    mockFetch({
+      id: "landcover",
+      extent: {
+        temporal: { interval: [["2001-01-01T00:00:00Z", "2020-12-31T00:00:00Z"]] },
+      },
+      renders: {
+        dashboard: {
+          assets: ["cog_default"],
+          bidx: [1],
+          colormap: { "0": [0, 0, 0, 128], "100": [0, 130, 0, 255] },
+          resampling: "nearest",
+        },
+      },
+    });
+    const config = await getMapConfig("landcover", "2010-01-01");
+    expect(config.renderKey).toBe("dashboard");
+  });
+
   it("skips the item-asset check when the items response is unusable", async () => {
     // The items URL also matches this route, so the probe gets a payload with
     // no `features` and must skip the check instead of failing the map.
