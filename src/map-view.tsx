@@ -1,10 +1,11 @@
 // Single-layer raster map of a collection over a date range, rendered with
 // veda-ui-blocks. MCP-free so the preview harness can render it standalone.
+// No header bar: the in-map legend already surfaces the dataset info pulled
+// from STAC, so title/dates above the map would just duplicate it.
 import {
   CARTO_DARK_WITH_LABELS_BASEMAP_STYLE,
   GeoConfigProvider,
   StacSingleLayerMap,
-  Tag,
 } from "@teamimpact/veda-ui-blocks";
 import type { MapView as MapViewData } from "../view-contract";
 import styles from "./mcp-app.module.css";
@@ -24,29 +25,20 @@ function viewStateFromBbox(bbox: number[] | null) {
 
 export function MapView({ view }: { view: MapViewData }) {
   return (
-    <div>
-      <h2 className={styles.subhead}>
-        {view.collectionTitle}
-        {view.demo && <Tag variant="solid">Demo</Tag>}
-      </h2>
-      <p className={styles.mapDates}>
-        {view.dateRange.from} to {view.dateRange.to}
-      </p>
-      <GeoConfigProvider stacApiUrl={view.stacRoot} titilerBaseUrl={view.rasterRoot}>
-        <div className={styles.mapPanel}>
-          <StacSingleLayerMap
-            baseMapStyle={CARTO_DARK_WITH_LABELS_BASEMAP_STYLE}
-            initialViewState={viewStateFromBbox(view.bbox)}
-            showScrollGuard
-            layerConfig={{
-              type: "raster",
-              collectionId: view.collectionId,
-              collectionAssetId: view.renderKey,
-              dateRange: view.dateRange,
-            }}
-          />
-        </div>
-      </GeoConfigProvider>
-    </div>
+    <GeoConfigProvider stacApiUrl={view.stacRoot} titilerBaseUrl={view.rasterRoot}>
+      <div className={styles.mapPanel}>
+        <StacSingleLayerMap
+          baseMapStyle={CARTO_DARK_WITH_LABELS_BASEMAP_STYLE}
+          initialViewState={viewStateFromBbox(view.bbox)}
+          showScrollGuard
+          layerConfig={{
+            type: "raster",
+            collectionId: view.collectionId,
+            collectionAssetId: view.renderKey,
+            dateRange: view.dateRange,
+          }}
+        />
+      </div>
+    </GeoConfigProvider>
   );
 }

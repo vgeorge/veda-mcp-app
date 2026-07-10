@@ -161,16 +161,11 @@
   }
 }
 
-.mapDates {
-  margin: 0 0 var(--spacing-sm);
-  color: var(--color-text-secondary, #565c65);
-  font-size: 0.875rem;
-}
-
-/* The map component is flex:1/min-height:0 and needs a sized flex parent. */
+/* The map component is flex:1/min-height:0 and needs a sized flex parent.
+ * Taller now that there's no header bar above it. */
 .mapPanel {
   display: flex;
-  height: 420px;
+  height: 480px;
   border-radius: var(--border-radius-md);
   overflow: hidden;
 }
