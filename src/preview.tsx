@@ -37,6 +37,29 @@ const COLLECTIONS: CollectionView[] = [
     temporal: null,
     thumbnailHref: "https://thumbnails.openveda.cloud/geoscf--dataset-cover.jpg",
   },
+  {
+    id: "omi-tropospheric-no2",
+    title: "OMI/Aura Tropospheric Nitrogen Dioxide",
+    description:
+      "Gridded tropospheric NO₂ column information derived from observations collected by the Ozone Monitoring Instrument aboard NASA's Aura satellite.",
+    temporal: { start: "2005-01-01", end: "2022-12-31" },
+    thumbnailHref: null,
+  },
+  {
+    id: "tempo-no2-l3",
+    title: "Troposphere nitrogen dioxide vertical column",
+    description: "Troposphere nitrogen dioxide integrated within the vertical column.",
+    temporal: { start: "2024-04-01", end: "2024-04-11" },
+    thumbnailHref: "https://thumbnails.openveda.cloud/does-not-exist.jpg", // 404 -> onError globe
+  },
+  {
+    id: "tropess-nox-anth",
+    title: "TROPESS Surface Anthropogenic NOx emissions",
+    description:
+      "Surface total NOx emissions monthly product, part of the Tropospheric Chemical Reanalysis v2.",
+    temporal: { start: "2005-01-01", end: "2021-12-31" },
+    thumbnailHref: null,
+  },
 ];
 
 const ITEMS: ItemView[] = [

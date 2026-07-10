@@ -28,7 +28,7 @@ export function CollectionsView({
 }) {
   if (collections.length === 0) return <p>No collections found.</p>;
   return (
-    <ul className={styles.cardList}>
+    <ul className={styles.collectionGrid}>
       {collections.map((c) => (
         <li key={c.id}>
           <CollectionCard collection={c} busy={busy} onPick={onPick} />

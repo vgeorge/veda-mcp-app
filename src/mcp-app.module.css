@@ -1,6 +1,5 @@
 .main {
   width: 100%;
-  max-width: 425px;
   box-sizing: border-box;
 
   > * {
@@ -30,26 +29,73 @@
   word-break: break-word;
 }
 
+/* Items: a simple vertical stack of full-width rows. */
 .cardList {
   list-style: none;
   padding: 0;
   margin: 0;
-
-  > li + li {
-    margin-top: var(--spacing-sm);
-  }
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
-/* STAC-Browser-style collection tile: scale CardDetailed's wide-page defaults
- * for the ~425px MCP panel and truncate long catalog descriptions. */
+/* Collections: responsive tile grid — 1 column in the ~425px Desktop panel,
+ * more in wider hosts (basic-host). Cards equalise heights per row. */
+.collectionGrid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+/* STAC-Browser-style collection tile. CardDetailed's base layout is a grid
+ * with 45fr/55fr rows and an absolutely-positioned image that relies on a
+ * consumer-set card height; we escape that with flex + an aspect-ratio media
+ * so the cover image always has a definite box. */
 .collectionCard.collectionCard {
-  :global(.blocks-card-detailed__title) {
-    font-size: 1.05rem;
-    overflow-wrap: anywhere;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--color-border, #dfe1e2);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg, #fff);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  :global(.blocks-card-detailed__media) {
+    aspect-ratio: 16 / 9;
+    flex: none;
+  }
+
+  :global(.blocks-card-detailed__tag-primary) {
+    top: var(--spacing-xs, 0.25rem);
+    left: var(--spacing-xs, 0.25rem);
   }
 
   :global(.blocks-card-detailed__content-container) {
-    padding: var(--spacing-md);
+    flex: 1;
+    padding: var(--spacing-sm) var(--spacing-md);
+    gap: 0.5rem;
+  }
+
+  /* Base forces single-line ellipsis; collection titles need to wrap. */
+  :global(.blocks-card-detailed__title) {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: clip;
+    font-size: 1rem;
+    line-height: 1.3rem;
+    overflow-wrap: anywhere;
   }
 
   :global(.blocks-card-detailed__description) {
@@ -58,14 +104,26 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  :global(.blocks-card-detailed__actions) {
+    margin-top: auto;
+  }
+
+  :global(.blocks-card-detailed__actions .usa-button) {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
-/* CardDetailed image-left assumes a wide page (200px media column and a
- * height-card-* utility on the consumer side); scale it for the ~425px
- * MCP panel and keep long STAC item ids from overflowing. */
+/* CardDetailed image-left assumes a wide page (200px media column); scale the
+ * media column for the MCP panel and keep long STAC item ids from overflowing. */
 .itemCard.itemCard {
   grid-template-columns: 120px 1fr;
   min-height: 120px;
+  border: 1px solid var(--color-border, #dfe1e2);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg, #fff);
+  overflow: hidden;
 
   :global(.blocks-card-detailed__title) {
     font-size: 1rem;
@@ -74,11 +132,6 @@
 
   :global(.blocks-card-detailed__content-container) {
     padding: var(--spacing-md);
-  }
-
-  :global(.blocks-card-detailed__tag-primary) {
-    top: var(--spacing-sm);
-    left: var(--spacing-sm);
   }
 }
 
