@@ -41,15 +41,26 @@
   gap: var(--spacing-sm);
 }
 
-/* Collections: responsive tile grid — 1 column in the ~425px Desktop panel,
- * more in wider hosts (basic-host). Cards equalise heights per row. */
+/* Collections: responsive tile row — 1 column in the ~425px Desktop panel,
+ * more in wider hosts. Flex (not grid): a partial last row (e.g. 2 results)
+ * centers via justify-content instead of hugging the left edge — grid can't do
+ * this because a column only "collapses" when it's empty across EVERY row. */
 .collectionGrid {
   list-style: none;
   padding: 0;
   margin: 0;
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: var(--spacing-md);
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.collectionGrid > li {
+  /* Grow to fill full rows evenly; cap so a lone pair in a wide host doesn't
+   * stretch absurdly; shrink (min-width:0) so narrow panels don't overflow. */
+  flex: 1 1 220px;
+  max-width: 360px;
+  min-width: 0;
 }
 
 /* STAC-Browser-style collection tile. CardDetailed's base layout is a grid
