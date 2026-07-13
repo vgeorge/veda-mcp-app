@@ -1,8 +1,8 @@
 // Adapters mapping view-contract types onto veda-ui-blocks cards.
 import { CardDetailed, Tag } from "@teamimpact/veda-ui-blocks";
 import type { SyntheticEvent } from "react";
-import type { CollectionView, ItemView } from "../view-contract";
-import styles from "./mcp-app.module.css";
+import type { CollectionView, ItemView } from "../../view-contract";
+import styles from "../styles/views.module.css";
 
 function coverageLine(c: {
   temporal: { start: string | null; end: string | null } | null;

@@ -71,11 +71,13 @@ server/
   stac.ts               STAC catalog client: fetch/cache collections, items, previews
   dashboard-render.ts   render metadata -> map config, mappability guards
 ui/
-  views/picker.tsx      one file per tool widget: entry + view component
+  views/picker.tsx      one file per tool widget: view component + mount
   views/items.tsx
   views/map.tsx         single-layer + swipe-compare maps (veda-ui-blocks)
-  use-view-result.tsx   shared plumbing: useApp hook wrapper, DebugDetails
-  cards.tsx             card adapters for collections/items
+  components/view-shell.tsx  common frame: connecting/error/waiting/debug
+  components/cards.tsx  card adapters for collections/items
+  hooks/use-view-result.ts   useApp wrapper: parse tool result, surface errors
+  styles/               global.css + views.module.css
   veda-ui-blocks-stubs.ts  build stubs so picker/items skip the map stack
 ```
 

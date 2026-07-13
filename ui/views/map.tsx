@@ -17,8 +17,9 @@ import {
   type CompareView,
   type MapView as MapViewData,
 } from "../../view-contract";
-import styles from "../mcp-app.module.css";
-import { DebugDetails, safeAreaStyle, useViewResult } from "../use-view-result";
+import { ViewShell } from "../components/view-shell";
+import { useViewResult } from "../hooks/use-view-result";
+import styles from "../styles/views.module.css";
 
 // Rough camera fit for the collection's spatial extent in the ~425px panel:
 // zoom so the bbox's larger dimension fills the view (global -> zoom 0).
@@ -74,21 +75,8 @@ function MapView({ view }: { view: MapViewData | CompareView }) {
 }
 
 function MapApp() {
-  const { view, error, debug, connecting, hostContext } = useViewResult(
-    "VEDA Map",
-    parseMapResourceView,
-  );
-
-  if (connecting) return <div>Connecting...</div>;
-
-  return (
-    <main className={styles.main} style={safeAreaStyle(hostContext)}>
-      {error && <p className={styles.error}>{error}</p>}
-      {view && <MapView view={view} />}
-      {!view && !error && <p className={styles.notice}>Waiting for results…</p>}
-      {error && <DebugDetails debug={debug} />}
-    </main>
-  );
+  const result = useViewResult("VEDA Map", parseMapResourceView);
+  return <ViewShell result={result}>{(view) => <MapView view={view} />}</ViewShell>;
 }
 
 createRoot(document.getElementById("root")!).render(
