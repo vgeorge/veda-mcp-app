@@ -5,6 +5,9 @@
   "type": "module",
   "description": "MCP App (Apps SDK) for interacting with a VEDA STAC catalog. Scaffold: wired hello-world tool + React UI resource.",
   "license": "MIT",
+  "engines": {
+    "node": "22.x"
+  },
   "bin": {
     "veda-mcp-app": "dist/main.js"
   },
@@ -18,6 +21,7 @@
     "serve": "tsx --watch main.ts",
     "serve:stdio": "tsx main.ts --stdio",
     "start": "npm run build && npm run serve",
+    "start:prod": "node dist/main.js",
     "setup:claude": "node scripts/setup-claude.mjs",
     "test": "vitest run",
     "dev": "cross-env NODE_ENV=development concurrently \"npm run watch\" \"npm run serve\""

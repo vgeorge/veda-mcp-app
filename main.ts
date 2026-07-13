@@ -13,6 +13,30 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import cors from "cors";
 import type { Request, Response } from "express";
 import { createServer } from "./server.js";
+import { RASTER_ROOT, STAC_ROOT } from "./stac.js";
+
+// Fail loud on clearly-wrong config instead of running against a broken catalog.
+function validateConfig(): void {
+  if (process.env.VEDA_STAC_ROOT) {
+    try {
+      new URL(process.env.VEDA_STAC_ROOT);
+    } catch {
+      console.error(
+        `VEDA_STAC_ROOT is not a valid URL: ${process.env.VEDA_STAC_ROOT}`,
+      );
+      process.exit(1);
+    }
+  }
+  if (
+    process.env.MCP_PATH_TOKEN &&
+    !/^[A-Za-z0-9_-]+$/.test(process.env.MCP_PATH_TOKEN)
+  ) {
+    console.error(
+      "MCP_PATH_TOKEN must contain only letters, digits, - and _ (it becomes a URL path segment)",
+    );
+    process.exit(1);
+  }
+}
 
 // Streamable HTTP transport (stateless: a fresh server per request).
 export async function startStreamableHTTPServer(
@@ -20,10 +44,21 @@ export async function startStreamableHTTPServer(
 ): Promise<void> {
   const port = parseInt(process.env.PORT ?? "3001", 10);
 
+  // Optional shared-secret path segment: with MCP_PATH_TOKEN=abc the endpoint
+  // becomes /mcp/abc, so only people given the full URL can reach the server.
+  const pathToken = process.env.MCP_PATH_TOKEN;
+  const mcpPath = pathToken ? `/mcp/${pathToken}` : "/mcp";
+
   const app = createMcpExpressApp({ host: "0.0.0.0" });
   app.use(cors());
 
-  app.all("/mcp", async (req: Request, res: Response) => {
+  // Liveness probe (e.g. Railway healthcheck). Confirms Express is serving, not
+  // just that the port is open.
+  app.get("/health", (_req: Request, res: Response) => {
+    res.json({ status: "ok", transport: "http" });
+  });
+
+  app.all(mcpPath, async (req: Request, res: Response) => {
     const server = createServer();
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
@@ -54,7 +89,12 @@ export async function startStreamableHTTPServer(
       console.error("Failed to start server:", err);
       process.exit(1);
     }
-    console.log(`MCP server listening on http://localhost:${port}/mcp`);
+    console.log("VEDA MCP App (HTTP transport)");
+    console.log(`  port:        ${port}`);
+    console.log(`  stac root:   ${STAC_ROOT}`);
+    console.log(`  raster root: ${RASTER_ROOT}`);
+    console.log(`  endpoints:   http://localhost:${port}${mcpPath} (POST, MCP)`);
+    console.log(`               http://localhost:${port}/health (GET, liveness)`);
   });
 
   const shutdown = () => {
@@ -74,6 +114,7 @@ export async function startStdioServer(
 }
 
 async function main() {
+  validateConfig();
   if (process.argv.includes("--stdio")) {
     await startStdioServer(createServer);
   } else {
