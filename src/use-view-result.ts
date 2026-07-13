@@ -3,6 +3,7 @@
 import type { App, McpUiHostContext } from "@modelcontextprotocol/ext-apps";
 import { useApp } from "@modelcontextprotocol/ext-apps/react";
 import { useEffect, useState } from "react";
+import { recoverView, type WireToolResult } from "../view-contract.js";
 
 export interface ViewResult<T> {
   app: App | null;
@@ -58,38 +59,15 @@ export function useViewResult<T>(
     onAppCreated: (app) => {
       app.ontoolresult = async (result) => {
         setDebug(summarizeResult(result as RawToolResult));
-        // A failed tool call has no structuredContent but the host may still
-        // mount this view for it: surface the tool's error text instead of a
-        // contract-parse error.
-        if (result.structuredContent === undefined) {
-          // Some hosts (Claude Desktop) strip structuredContent from the
-          // delivered result; check whether any text block carries the view
-          // as JSON before giving up.
-          for (const block of result.content ?? []) {
-            if (block.type !== "text") continue;
-            try {
-              const view = parse(JSON.parse(block.text));
-              setView(view);
-              setError(null);
-              return;
-            } catch {
-              // Not this block — keep looking.
-            }
-          }
-          const text = result.content?.find((c) => c.type === "text")?.text;
-          setError(
-            result.isError
-              ? (text ?? "The tool call failed.")
-              : "The server returned no view data.",
-          );
-          return;
-        }
-        try {
-          setView(parse(result.structuredContent));
+        // recoverView handles host delivery differences (Claude Desktop strips
+        // structuredContent; the view is recovered from the JSON text block)
+        // and surfaces tool/contract errors as an error string.
+        const recovered = recoverView(result as WireToolResult, parse);
+        if (recovered.error !== undefined) {
+          setError(recovered.error);
+        } else {
+          setView(recovered.view);
           setError(null);
-        } catch (e) {
-          console.error(e);
-          setError(e instanceof Error ? e.message : String(e));
         }
       };
       app.onerror = console.error;

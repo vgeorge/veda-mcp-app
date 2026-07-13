@@ -18,6 +18,7 @@ import {
 import {
   CollectionsViewSchema,
   CompareViewSchema,
+  encodeViewResult,
   ItemsViewSchema,
   MapViewSchema,
   type View,
@@ -58,29 +59,12 @@ function coverage(c: CollectionSummary): string {
   return ` (${c.temporal.start ?? "open"} to ${c.temporal.end ?? "open"})`;
 }
 
-// Build a tool result carrying the view both as structuredContent (the channel
-// conformant hosts like basic-host deliver to the widget) AND as a JSON text
-// content block. Claude Desktop strips structuredContent before handing the
-// result to the widget sandbox and substitutes a placeholder text block, but
-// it passes content text blocks through intact — so the widget recovers the
-// view by JSON-parsing the text blocks (see use-view-result.ts). The model
-// also sees this JSON block, which is acceptable.
-function viewResult(humanText: string, view: View): CallToolResult {
-  return {
-    content: [
-      { type: "text", text: humanText },
-      { type: "text", text: JSON.stringify(view) },
-    ],
-    structuredContent: view,
-  };
-}
-
 function collectionsResult(collections: CollectionSummary[]): CallToolResult {
   const text = collections.length
     ? collections.map((c) => `- ${c.id}: ${c.title}${coverage(c)}`).join("\n") +
       "\n\nThe user can click a collection card to pick a dataset."
     : "No matching collections.";
-  return viewResult(`VEDA STAC collections:\n${text}`, {
+  return encodeViewResult(`VEDA STAC collections:\n${text}`, {
     kind: "collections",
     collections,
   });
@@ -90,7 +74,7 @@ function itemsResult(collectionId: string, items: ItemSummary[]): CallToolResult
   const text = items.length
     ? items.map((i) => `- ${i.id} (${i.start ?? "?"} to ${i.end ?? "?"})`).join("\n")
     : "No items found.";
-  return viewResult(`Items in ${collectionId}:\n${text}`, {
+  return encodeViewResult(`Items in ${collectionId}:\n${text}`, {
     kind: "items",
     collectionId,
     items,
@@ -118,7 +102,7 @@ async function mapResult(
     rasterRoot: RASTER_ROOT,
     demo,
   };
-  return viewResult(
+  return encodeViewResult(
     `Map of ${config.collectionTitle} (${config.collectionId}), ${config.dateRange.from} to ${config.dateRange.to}.`,
     view,
   );
@@ -164,7 +148,7 @@ async function compareResult(
     stacRoot: STAC_ROOT,
     rasterRoot: RASTER_ROOT,
   };
-  return viewResult(
+  return encodeViewResult(
     `Comparing ${left.collectionTitle} (${left.dateRange.from}–${left.dateRange.to}) vs ${right.collectionTitle} (${right.dateRange.from}–${right.dateRange.to}).`,
     view,
   );

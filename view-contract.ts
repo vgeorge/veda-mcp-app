@@ -132,3 +132,69 @@ export function parseMapResourceView(
 ): MapView | CompareView {
   return parseWith(MapResourceSchema, structuredContent);
 }
+
+// ---------------------------------------------------------------------------
+// Wire carriage: how a View travels inside a tool result. Encode and decode
+// live together so the host-compat invariant below is declared (and tested)
+// in one place.
+
+// Structural subset of the SDK's CallToolResult, declared here so the UI
+// bundles never import the server SDK.
+export interface WireToolResult {
+  isError?: boolean;
+  structuredContent?: unknown;
+  content?: { type: string; text?: string }[];
+}
+
+// Build a tool result carrying the view both as structuredContent (the channel
+// conformant hosts like basic-host deliver to the widget) AND as a JSON text
+// content block. Claude Desktop strips structuredContent before handing the
+// result to the widget sandbox and substitutes a placeholder text block, but
+// it passes content text blocks through intact — so the widget recovers the
+// view by JSON-parsing the text blocks (see recoverView). The model also sees
+// this JSON block, which is acceptable.
+export function encodeViewResult(humanText: string, view: View) {
+  return {
+    content: [
+      { type: "text" as const, text: humanText },
+      { type: "text" as const, text: JSON.stringify(view) },
+    ],
+    structuredContent: view,
+  };
+}
+
+export type RecoveredView<T> =
+  | { view: T; error?: undefined }
+  | { view?: undefined; error: string };
+
+// Recover the view from a tool result as delivered by the host: try
+// structuredContent, then JSON-parse text blocks (the Claude Desktop path).
+// A result with no recoverable view yields the tool's error text (or a
+// generic message) for the UI error banner.
+export function recoverView<T>(
+  result: WireToolResult,
+  parse: (structuredContent: unknown) => T,
+): RecoveredView<T> {
+  if (result.structuredContent === undefined) {
+    for (const block of result.content ?? []) {
+      if (block.type !== "text" || block.text === undefined) continue;
+      try {
+        return { view: parse(JSON.parse(block.text)) };
+      } catch {
+        // Not this block — keep looking.
+      }
+    }
+    const text = result.content?.find((c) => c.type === "text")?.text;
+    return {
+      error: result.isError
+        ? (text ?? "The tool call failed.")
+        : "The server returned no view data.",
+    };
+  }
+  try {
+    return { view: parse(result.structuredContent) };
+  } catch (e) {
+    console.error(e);
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}

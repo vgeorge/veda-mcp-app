@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  encodeViewResult,
   parseCollectionsView,
   parseItemsView,
   parseMapResourceView,
   parseMapView,
+  recoverView,
+  type View,
 } from "./view-contract.js";
 
 const ITEM = {
@@ -127,6 +130,86 @@ const COMPARE = {
   stacRoot: "https://dev.openveda.cloud/api/stac",
   rasterRoot: "https://dev.openveda.cloud/api/raster",
 };
+
+describe("encodeViewResult", () => {
+  it("carries the view as structuredContent plus a duplicate JSON text block", () => {
+    const view: View = { kind: "items", collectionId: "no2-monthly", items: [ITEM] };
+    const result = encodeViewResult("Items in no2-monthly", view);
+    expect(result.structuredContent).toBe(view);
+    // Exactly two text blocks, in order: the model reads block 0, hosts that
+    // strip structuredContent recover the view from block 1.
+    expect(result.content).toEqual([
+      { type: "text", text: "Items in no2-monthly" },
+      { type: "text", text: JSON.stringify(view) },
+    ]);
+  });
+});
+
+describe("recoverView", () => {
+  const parse = parseItemsView;
+  const view = { kind: "items", collectionId: "no2-monthly", items: [ITEM] };
+
+  it("recovers from structuredContent when present", () => {
+    const r = recoverView({ structuredContent: view, content: [] }, parse);
+    expect(r.view).toEqual(view);
+  });
+
+  it("surfaces the contract error for a non-conforming structuredContent", () => {
+    const r = recoverView({ structuredContent: { kind: "items" } }, parse);
+    expect(r.error).toMatch(/Unexpected result from server/);
+  });
+
+  it("recovers from a JSON text block when structuredContent is stripped", () => {
+    const r = recoverView(
+      {
+        content: [
+          { type: "text", text: "placeholder the host substituted" },
+          { type: "text", text: JSON.stringify(view) },
+        ],
+      },
+      parse,
+    );
+    expect(r.view).toEqual(view);
+  });
+
+  it("surfaces the tool's error text for an isError result", () => {
+    const r = recoverView(
+      { isError: true, content: [{ type: "text", text: "Collection not found." }] },
+      parse,
+    );
+    expect(r.error).toBe("Collection not found.");
+  });
+
+  it("reports missing view data for a non-error result with no view", () => {
+    const r = recoverView({ content: [{ type: "text", text: "hi" }] }, parse);
+    expect(r.error).toBe("The server returned no view data.");
+  });
+});
+
+describe("wire round-trip with structuredContent stripped (Claude Desktop)", () => {
+  const cases: { name: string; view: View; parse: (sc: unknown) => View }[] = [
+    {
+      name: "collections",
+      view: { kind: "collections", collections: [COLLECTION] },
+      parse: parseCollectionsView,
+    },
+    {
+      name: "items",
+      view: { kind: "items", collectionId: "no2-monthly", items: [ITEM] },
+      parse: parseItemsView,
+    },
+    { name: "map", view: MAP as View, parse: parseMapResourceView },
+    { name: "compare", view: COMPARE as View, parse: parseMapResourceView },
+  ];
+
+  for (const { name, view, parse } of cases) {
+    it(`recovers the ${name} view from the text blocks alone`, () => {
+      const { content } = encodeViewResult("human summary", view);
+      const r = recoverView({ content }, parse);
+      expect(r.view).toEqual(view);
+    });
+  }
+});
 
 describe("parseMapResourceView", () => {
   it("parses the single-layer (map) variant", () => {
