@@ -9,7 +9,7 @@
     "node": "22.x"
   },
   "bin": {
-    "veda-mcp-app": "dist/main.js"
+    "veda-mcp-app": "dist/server/main.js"
   },
   "scripts": {
     "build": "tsc --noEmit && npm run build:ui && npm run build:server",
@@ -18,10 +18,10 @@
     "postinstall": "patch-package",
     "prepare": "npm run build",
     "watch": "cross-env INPUT=map.html vite build --watch",
-    "serve": "tsx --watch main.ts",
-    "serve:stdio": "tsx main.ts --stdio",
+    "serve": "tsx --watch server/main.ts",
+    "serve:stdio": "tsx server/main.ts --stdio",
     "start": "npm run build && npm run serve",
-    "start:prod": "node dist/main.js",
+    "start:prod": "node dist/server/main.js",
     "setup:claude": "node scripts/setup-claude.mjs",
     "test": "vitest run",
     "dev": "cross-env NODE_ENV=development concurrently \"npm run watch\" \"npm run serve\""

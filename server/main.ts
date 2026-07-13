@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * Entry point for running the MCP server.
- * Run compiled: node dist/main.js [--stdio]
- * Or from source: tsx main.ts [--stdio]
+ * Run compiled: node dist/server/main.js [--stdio]
+ * Or from source: tsx server/main.ts [--stdio]
  * Pass --stdio for stdio transport (used by Claude Desktop); otherwise HTTP.
  */
 

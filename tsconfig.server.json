@@ -11,5 +11,11 @@
     "esModuleInterop": true,
     "resolveJsonModule": true
   },
-  "include": ["main.ts", "server.ts", "stac.ts", "view-contract.ts"]
+  "include": [
+    "server/main.ts",
+    "server/server.ts",
+    "server/stac.ts",
+    "server/dashboard-render.ts",
+    "view-contract.ts"
+  ]
 }

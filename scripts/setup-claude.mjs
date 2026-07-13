@@ -13,7 +13,7 @@ const SERVER_NAME = "veda-mcp-app";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
-const distMain = path.join(projectRoot, "dist", "main.js");
+const distMain = path.join(projectRoot, "dist", "server", "main.js");
 const nodeBin = process.execPath; // the node running this script — guaranteed valid
 
 const args = new Set(process.argv.slice(2));

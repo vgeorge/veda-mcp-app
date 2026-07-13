@@ -15,7 +15,7 @@ const isDevelopment = process.env.NODE_ENV === "development";
 // map stack.
 const VEDA_UI_BLOCKS_STUB = path.resolve(
   import.meta.dirname,
-  "src/veda-ui-blocks-stubs.ts",
+  "ui/veda-ui-blocks-stubs.ts",
 );
 
 const NEEDS_MAP = INPUT === "map.html";

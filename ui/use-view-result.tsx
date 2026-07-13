@@ -4,6 +4,7 @@ import type { App, McpUiHostContext } from "@modelcontextprotocol/ext-apps";
 import { useApp } from "@modelcontextprotocol/ext-apps/react";
 import { useEffect, useState } from "react";
 import { recoverView, type WireToolResult } from "../view-contract.js";
+import styles from "./mcp-app.module.css";
 
 export interface ViewResult<T> {
   app: App | null;
@@ -91,6 +92,18 @@ export function useViewResult<T>(
     connecting: !app && !connectError,
     hostContext,
   };
+}
+
+// Collapsed dump of what the host actually delivered to ontoolresult, for
+// debugging delivery differences between hosts from inside the sandbox.
+export function DebugDetails({ debug }: { debug: string | null }) {
+  if (!debug) return null;
+  return (
+    <details className={styles.debug}>
+      <summary>Debug: last tool result</summary>
+      <pre>{debug}</pre>
+    </details>
+  );
 }
 
 // Inline padding for the host's safe-area insets.

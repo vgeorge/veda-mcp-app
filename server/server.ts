@@ -4,10 +4,9 @@ import type { CallToolResult, ReadResourceResult } from "@modelcontextprotocol/s
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
+import { getMapConfig, MapConfigError } from "./dashboard-render.js";
 import {
-  getMapConfig,
   listItems,
-  MapConfigError,
   RASTER_HOST,
   RASTER_ROOT,
   searchCollections,
@@ -22,7 +21,7 @@ import {
   ItemsViewSchema,
   MapViewSchema,
   type View,
-} from "./view-contract.js";
+} from "../view-contract.js";
 
 // One resource per step view; each tool's `_meta.ui.resourceUri` picks the
 // view the host renders inline for that tool's result.
@@ -44,10 +43,11 @@ const MAP_CONNECT_DOMAINS = [
   "https://tiles-d.basemaps.cartocdn.com",
 ];
 
-// Works both from source (server.ts) and compiled (dist/server.js)
+// Bundled view html lives at the dist root. Works both from source
+// (server/server.ts -> ../dist) and compiled (dist/server/server.js -> ..).
 const DIST_DIR = import.meta.filename.endsWith(".ts")
-  ? path.join(import.meta.dirname, "dist")
-  : import.meta.dirname;
+  ? path.join(import.meta.dirname, "..", "dist")
+  : path.join(import.meta.dirname, "..");
 
 // Demo dataset: an NO2 collection whose renders metadata is consistent with
 // its items, so the veda-ui-blocks map can actually tile it ("no2-monthly"
