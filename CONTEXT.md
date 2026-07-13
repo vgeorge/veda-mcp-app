@@ -10,7 +10,7 @@ named after a concept, that concept belongs here.
   `assets.thumbnail` cover image, http(s) only).
 - **Item** — a dated scene inside a Collection, carrying a raster preview and
   a COG asset.
-- **Dashboard Render** — a Collection's `renders.dashboard` styling params
+- **Dashboard Render** (`server/dashboard-render.ts`) — a Collection's `renders.dashboard` styling params
   (asset, bidx, rescale, colormap) used to build item previews via the titiler
   raster API. Resolution rule: use the render's named asset when the item
   exposes it, else fall back to `cog_default`.
