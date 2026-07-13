@@ -13,6 +13,7 @@
   },
   "include": [
     "server/main.ts",
+    "server/config.ts",
     "server/server.ts",
     "server/stac.ts",
     "server/dashboard-render.ts",

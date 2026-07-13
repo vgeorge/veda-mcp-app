@@ -4,14 +4,9 @@ import type { CallToolResult, ReadResourceResult } from "@modelcontextprotocol/s
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { getMapConfig, MapConfigError } from "./dashboard-render.js";
-import {
-  RASTER_HOST,
-  RASTER_ROOT,
-  searchCollections,
-  STAC_ROOT,
-  type CollectionSummary,
-} from "./stac.js";
+import { RASTER_HOST, RASTER_ROOT, STAC_ROOT } from "./config.js";
+import { getMapConfig, MapConfigError, type MapConfig } from "./dashboard-render.js";
+import { searchCollections, type CollectionSummary } from "./stac.js";
 import {
   CollectionsViewSchema,
   CompareViewSchema,
@@ -66,20 +61,27 @@ function collectionsResult(collections: CollectionSummary[]): CallToolResult {
   });
 }
 
-async function mapResult(
-  collectionId: string,
-  datetime: string,
-  demo = false,
+// MapConfigError messages are written for the calling agent to self-correct
+// on, so they become isError results instead of propagating as exceptions.
+async function corrective(
+  build: () => Promise<CallToolResult>,
 ): Promise<CallToolResult> {
-  let config;
   try {
-    config = await getMapConfig(collectionId, datetime);
+    return await build();
   } catch (e) {
     if (e instanceof MapConfigError) {
       return { content: [{ type: "text", text: e.message }], isError: true };
     }
     throw e;
   }
+}
+
+async function mapResult(
+  collectionId: string,
+  datetime: string,
+  demo = false,
+): Promise<CallToolResult> {
+  const config = await getMapConfig(collectionId, datetime);
   const view: View = {
     kind: "map",
     ...config,
@@ -93,42 +95,30 @@ async function mapResult(
   );
 }
 
+// A compare side is a MapConfig minus the bbox (only the left side's bbox
+// sets the initial camera).
+function compareSide({ collectionId, collectionTitle, renderKey, dateRange }: MapConfig) {
+  return { collectionId, collectionTitle, renderKey, dateRange };
+}
+
 // Resolve each side with the same getMapConfig the single-layer map uses; the
 // two calls are independent so they run in parallel. A MapConfigError on either
 // side surfaces that side's corrective message — the agent only fixes the bad
-// side. bbox comes from the left side for the initial camera.
+// side.
 async function compareResult(
   leftCollectionId: string,
   leftDatetime: string,
   rightCollectionId: string,
   rightDatetime: string,
 ): Promise<CallToolResult> {
-  let left, right;
-  try {
-    [left, right] = await Promise.all([
-      getMapConfig(leftCollectionId, leftDatetime),
-      getMapConfig(rightCollectionId, rightDatetime),
-    ]);
-  } catch (e) {
-    if (e instanceof MapConfigError) {
-      return { content: [{ type: "text", text: e.message }], isError: true };
-    }
-    throw e;
-  }
+  const [left, right] = await Promise.all([
+    getMapConfig(leftCollectionId, leftDatetime),
+    getMapConfig(rightCollectionId, rightDatetime),
+  ]);
   const view: View = {
     kind: "compare",
-    left: {
-      collectionId: left.collectionId,
-      collectionTitle: left.collectionTitle,
-      renderKey: left.renderKey,
-      dateRange: left.dateRange,
-    },
-    right: {
-      collectionId: right.collectionId,
-      collectionTitle: right.collectionTitle,
-      renderKey: right.renderKey,
-      dateRange: right.dateRange,
-    },
+    left: compareSide(left),
+    right: compareSide(right),
     bbox: left.bbox,
     stacRoot: STAC_ROOT,
     rasterRoot: RASTER_ROOT,
@@ -211,7 +201,7 @@ export function createServer(): McpServer {
       _meta: { ui: { resourceUri: MAP_URI } },
     },
     async ({ collectionId, datetime }): Promise<CallToolResult> =>
-      mapResult(collectionId, datetime),
+      corrective(() => mapResult(collectionId, datetime)),
   );
 
   registerAppTool(server,
@@ -225,7 +215,7 @@ export function createServer(): McpServer {
       _meta: { ui: { resourceUri: MAP_URI } },
     },
     async (): Promise<CallToolResult> =>
-      mapResult(DEMO_COLLECTION, "2020-01-01/2021-12-31", true),
+      corrective(() => mapResult(DEMO_COLLECTION, "2020-01-01/2021-12-31", true)),
   );
 
   registerAppTool(server,
@@ -244,7 +234,9 @@ export function createServer(): McpServer {
       _meta: { ui: { resourceUri: MAP_URI } },
     },
     async ({ leftCollectionId, leftDatetime, rightCollectionId, rightDatetime }): Promise<CallToolResult> =>
-      compareResult(leftCollectionId, leftDatetime, rightCollectionId, rightDatetime),
+      corrective(() =>
+        compareResult(leftCollectionId, leftDatetime, rightCollectionId, rightDatetime),
+      ),
   );
 
   // Picker cards load collection cover thumbnails (img-src).

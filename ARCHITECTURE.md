@@ -66,7 +66,8 @@ test surface.
 view-contract.ts        View shapes + wire encode/decode (shared seam)
 collection-picker.html/map.html   vite entries (script src -> ui/views/*)
 server/
-  main.ts               transport bootstrap (stdio | HTTP), config validation
+  main.ts               transport bootstrap (stdio | HTTP)
+  config.ts             env-derived roots + startup validation
   server.ts             tool + resource registrations, CSP per view
   stac.ts               STAC catalog client: fetch/cache/search collections
   dashboard-render.ts   render metadata -> map config, mappability guards

@@ -1,18 +1,8 @@
-// Server-side client for the VEDA STAC API.
+// Server-side client for the VEDA STAC API: collection fetch/cache/search,
+// plus the fetch/parse plumbing dashboard-render shares.
 // No MCP deps so it stays unit-testable. Uses the global fetch (Node 18+).
 import { z } from "zod";
-
-export const STAC_ROOT =
-  process.env.VEDA_STAC_ROOT ?? "https://dev.openveda.cloud/api/stac";
-
-// titiler raster root serving item preview PNGs. Derived from the STAC root
-// (same origin, /api/raster) unless VEDA_RASTER_ROOT is set.
-export const RASTER_ROOT =
-  process.env.VEDA_RASTER_ROOT ??
-  STAC_ROOT.replace(/\/api\/stac\/?$/, "/api/raster");
-
-// Origin of the raster host; the UI resource allowlists it via CSP for img-src.
-export const RASTER_HOST = new URL(RASTER_ROOT).origin;
+import { STAC_ROOT } from "./config.js";
 
 export interface CollectionSummary {
   id: string;
@@ -29,6 +19,25 @@ export interface CollectionSummary {
 // the many optional STAC fields we ignore.
 const AssetSchema = z.object({ href: z.string().optional() }).passthrough();
 
+// `extent.temporal` as STAC declares it: a list of [start, end] intervals,
+// either end nullable (= open).
+export const TemporalExtentSchema = z
+  .object({ interval: z.array(z.array(z.string().nullable())).optional() })
+  .passthrough();
+
+// First temporal interval as YYYY-MM-DD dates; null when absent.
+export function firstDateInterval(
+  extent:
+    | { temporal?: { interval?: (string | null)[][] } }
+    | null
+    | undefined,
+): CollectionSummary["temporal"] {
+  const interval = extent?.temporal?.interval?.[0];
+  if (!interval) return null;
+  const [start, end] = interval;
+  return { start: start?.slice(0, 10) ?? null, end: end?.slice(0, 10) ?? null };
+}
+
 // title/description are nullish: the live catalog has collections with
 // explicit `title: null`, which must not be dropped as malformed.
 const CollectionSchema = z
@@ -37,12 +46,7 @@ const CollectionSchema = z
     title: z.string().nullish(),
     description: z.string().nullish(),
     extent: z
-      .object({
-        temporal: z
-          .object({ interval: z.array(z.array(z.string().nullable())).optional() })
-          .passthrough()
-          .optional(),
-      })
+      .object({ temporal: TemporalExtentSchema.optional() })
       .passthrough()
       .nullish(),
     assets: z
@@ -58,26 +62,6 @@ const CollectionsResponseSchema = z
       .array(z.object({ rel: z.string().optional(), href: z.string().optional() }).passthrough())
       .optional(),
   })
-  .passthrough();
-
-export const ItemSchema = z
-  .object({
-    id: z.string(),
-    bbox: z.array(z.number()).optional(),
-    properties: z
-      .object({
-        datetime: z.string().nullable().optional(),
-        start_datetime: z.string().optional(),
-        end_datetime: z.string().optional(),
-      })
-      .passthrough()
-      .optional(),
-    assets: z.record(z.string(), AssetSchema).optional(),
-  })
-  .passthrough();
-
-export const ItemsResponseSchema = z
-  .object({ features: z.array(z.unknown()) })
   .passthrough();
 
 // TTL cache for the full collection list (avoids re-fetching ~545 collections
@@ -103,28 +87,30 @@ function thumbnailFromAssets(
   return href?.startsWith("http") ? href : null;
 }
 
-// First temporal interval as YYYY-MM-DD dates; null when absent.
-function temporalFromExtent(
-  extent: ParsedCollection["extent"],
-): CollectionSummary["temporal"] {
-  const interval = extent?.temporal?.interval?.[0];
-  if (!interval) return null;
-  const [start, end] = interval;
-  return { start: start?.slice(0, 10) ?? null, end: end?.slice(0, 10) ?? null };
-}
-
 // Test-only: clear all caches.
 export function _resetCaches(): void {
   collectionsCache = null;
+}
+
+// A non-ok STAC response, carrying the HTTP status for callers that branch on
+// it (getMapConfig treats 404 as "unknown collection").
+export class StacHttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
 }
 
 export async function fetchJson(url: string): Promise<unknown> {
   const res = await fetch(url);
   if (!res.ok) {
     const body = (await res.text()).slice(0, 200);
-    const err = new Error(`STAC request failed (${res.status}) for ${url}: ${body}`);
-    (err as { status?: number }).status = res.status;
-    throw err;
+    throw new StacHttpError(
+      `STAC request failed (${res.status}) for ${url}: ${body}`,
+      res.status,
+    );
   }
   return res.json();
 }
@@ -185,8 +171,7 @@ export async function searchCollections(
     id: c.id,
     title: c.title ?? c.id,
     description: c.description ?? null,
-    temporal: temporalFromExtent(c.extent),
+    temporal: firstDateInterval(c.extent),
     thumbnailHref: thumbnailFromAssets(c.assets),
   }));
 }
-

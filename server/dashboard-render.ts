@@ -3,12 +3,13 @@
 // break the map component. Split from the STAC client so the mappability
 // rules live in one place.
 import { z } from "zod";
+import { STAC_ROOT } from "./config.js";
 import {
   fetchJson,
-  ItemSchema,
-  ItemsResponseSchema,
+  firstDateInterval,
   parseEach,
-  STAC_ROOT,
+  StacHttpError,
+  TemporalExtentSchema,
 } from "./stac.js";
 
 const MapCollectionSchema = z
@@ -22,14 +23,23 @@ const MapCollectionSchema = z
           .object({ bbox: z.array(z.array(z.number())).optional() })
           .passthrough()
           .optional(),
-        temporal: z
-          .object({ interval: z.array(z.array(z.string().nullable())).optional() })
-          .passthrough()
-          .optional(),
+        temporal: TemporalExtentSchema.optional(),
       })
       .passthrough()
       .optional(),
   })
+  .passthrough();
+
+// The item probe only reads the asset keys; everything else passes through.
+const ItemSchema = z
+  .object({
+    id: z.string(),
+    assets: z.record(z.string(), z.unknown()).optional(),
+  })
+  .passthrough();
+
+const ItemsResponseSchema = z
+  .object({ features: z.array(z.unknown()) })
   .passthrough();
 
 // Everything the map view needs to render a collection as a raster layer.
@@ -141,8 +151,11 @@ export async function getMapConfig(
       await fetchJson(`${STAC_ROOT}/collections/${encodeURIComponent(collectionId)}`),
     );
   } catch (e) {
-    const status = (e as { status?: number }).status;
-    if (status === 404 || e instanceof SyntaxError || e instanceof z.ZodError) {
+    if (
+      (e instanceof StacHttpError && e.status === 404) ||
+      e instanceof SyntaxError ||
+      e instanceof z.ZodError
+    ) {
       throw new MapConfigError(
         `Unknown collection "${collectionId}". Use search_collections to find a valid collection id.`,
       );
@@ -161,9 +174,9 @@ export async function getMapConfig(
 
   // Clamp to the temporal extent (dates only; interval bounds may be null =
   // open-ended). Fully outside -> error naming the valid interval.
-  const [extStart, extEnd] = collection.extent?.temporal?.interval?.[0] ?? [];
-  const min = extStart ? extStart.slice(0, 10) : null;
-  const max = extEnd ? extEnd.slice(0, 10) : null;
+  const extent = firstDateInterval(collection.extent);
+  const min = extent?.start ?? null;
+  const max = extent?.end ?? null;
   if ((max && range.from > max) || (min && range.to < min)) {
     throw new MapConfigError(
       `Collection "${collectionId}" has no data for ${range.from}/${range.to}: its temporal extent is ${min ?? "open"}/${max ?? "open"}.`,

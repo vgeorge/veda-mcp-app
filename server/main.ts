@@ -12,31 +12,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import cors from "cors";
 import type { Request, Response } from "express";
+import { RASTER_ROOT, STAC_ROOT, validateConfig } from "./config.js";
 import { createServer } from "./server.js";
-import { RASTER_ROOT, STAC_ROOT } from "./stac.js";
-
-// Fail loud on clearly-wrong config instead of running against a broken catalog.
-function validateConfig(): void {
-  if (process.env.VEDA_STAC_ROOT) {
-    try {
-      new URL(process.env.VEDA_STAC_ROOT);
-    } catch {
-      console.error(
-        `VEDA_STAC_ROOT is not a valid URL: ${process.env.VEDA_STAC_ROOT}`,
-      );
-      process.exit(1);
-    }
-  }
-  if (
-    process.env.MCP_PATH_TOKEN &&
-    !/^[A-Za-z0-9_-]+$/.test(process.env.MCP_PATH_TOKEN)
-  ) {
-    console.error(
-      "MCP_PATH_TOKEN must contain only letters, digits, - and _ (it becomes a URL path segment)",
-    );
-    process.exit(1);
-  }
-}
 
 // Streamable HTTP transport (stateless: a fresh server per request).
 export async function startStreamableHTTPServer(
