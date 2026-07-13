@@ -1,9 +1,0 @@
-# Railway deploy config.
-# Nixpacks (Railway's default builder) handles install (npm ci) + build
-# (npm run build) automatically from package.json; this pins the start command
-# so the deploy is reproducible (otherwise Nixpacks would fall back to the local
-# `npm start`, which rebuilds + runs tsx-watch).
-[deploy]
-startCommand = "npm run start:prod"
-healthcheckPath = "/health"
-healthcheckTimeout = 30

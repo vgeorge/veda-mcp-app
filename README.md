@@ -107,13 +107,6 @@ curl https://<app-name>.herokuapp.com/health
 The connector URL is `https://<app-name>.herokuapp.com/mcp/<token>` (or `/mcp`
 if `MCP_PATH_TOKEN` is unset).
 
-### Railway (alternative)
-
-`railway.toml` pins the same start command + `/health` healthcheck. New Project
-→ Deploy from GitHub repo → Settings → Networking → Generate Domain. Nixpacks
-auto-detects Node: install = `npm ci`, build = `npm run build`, start =
-`npm run start:prod`. Same env vars as above.
-
 ### Connecting from claude.ai / Claude Desktop (custom connector)
 
 Settings → Connectors → Add custom connector → paste the connector URL → Add.
@@ -175,14 +168,3 @@ Add a custom Connector pointing at the MCP HTTPS endpoint:
 - `npm run build` — typecheck + build UI + compile server to `dist/`.
 - `npm start` — run over HTTP (`http://localhost:3001/mcp`) for manual testing.
 - `npm run serve:stdio` / `npm run dev` — stdio from source / watch mode.
-
-## UI preview harness
-
-`preview.html` renders the step views (map with live tiles, picker, items)
-with fixture data outside the MCP host, for inspecting layout in a plain
-browser. `INPUT=map.html` selects the un-stubbed (map-capable) alias set:
-
-```bash
-INPUT=map.html npx vite --port 3006
-# open http://localhost:3006/preview.html
-```

@@ -11,14 +11,14 @@ if (!INPUT) {
 const isDevelopment = process.env.NODE_ENV === "development";
 
 // veda-ui-blocks' single entry statically imports every optional dep, so each
-// view entry stubs what it doesn't render. Only the map entry (and the dev
-// preview harness, which renders the map) keeps the real map stack.
+// view entry stubs what it doesn't render. Only the map entry keeps the real
+// map stack.
 const VEDA_UI_BLOCKS_STUB = path.resolve(
   import.meta.dirname,
   "src/veda-ui-blocks-stubs.ts",
 );
 
-const NEEDS_MAP = ["map.html", "preview.html"].includes(INPUT);
+const NEEDS_MAP = INPUT === "map.html";
 
 const STUBS: Record<string, string> = {
   "embla-carousel-react": VEDA_UI_BLOCKS_STUB,
