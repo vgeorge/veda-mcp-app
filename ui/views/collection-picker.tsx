@@ -1,43 +1,19 @@
 // Collection picker view (search_collections). Clicking a card announces the
 // pick in the chat via sendMessage so the conversation drives the next step —
 // no widget-local navigation.
-import { StrictMode, useState } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@teamimpact/veda-ui-blocks/default.css";
-import { parseCollectionsView, type CollectionView } from "../../view-contract";
+import { parseCollectionsView } from "../../view-contract";
 import { CollectionCard } from "../components/cards";
 import { ViewShell } from "../components/view-shell";
+import { useSendPick } from "../hooks/use-send-pick";
 import { useViewResult } from "../hooks/use-view-result";
 import styles from "../styles/views.module.css";
 
-const SEND_FAILED =
-  "Couldn't send your selection to the chat — type it instead.";
-
-function PickerApp() {
+function CollectionPickerApp() {
   const result = useViewResult("VEDA Collection Picker", parseCollectionsView);
-  const [sending, setSending] = useState(false);
-  const [pickError, setPickError] = useState<string | null>(null);
-
-  const pick = async (collection: CollectionView) => {
-    if (!result.app) return;
-    setSending(true);
-    setPickError(null);
-    try {
-      const sent = await result.app.sendMessage({
-        role: "user",
-        content: [{
-          type: "text",
-          text: `I picked the dataset "${collection.title}" (id: ${collection.id}).`,
-        }],
-      });
-      if (sent.isError) setPickError(SEND_FAILED);
-    } catch (e) {
-      console.error(e);
-      setPickError(SEND_FAILED);
-    } finally {
-      setSending(false);
-    }
-  };
+  const { pick, sending, pickError } = useSendPick(result.app);
 
   return (
     <ViewShell result={result} errorOverride={pickError}>
@@ -60,6 +36,6 @@ function PickerApp() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <PickerApp />
+    <CollectionPickerApp />
   </StrictMode>,
 );

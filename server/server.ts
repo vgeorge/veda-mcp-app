@@ -25,7 +25,7 @@ import {
 
 // One resource per step view; each tool's `_meta.ui.resourceUri` picks the
 // view the host renders inline for that tool's result.
-const PICKER_URI = "ui://veda-mcp-app/picker";
+const PICKER_URI = "ui://veda-mcp-app/collection-picker";
 const ITEMS_URI = "ui://veda-mcp-app/items";
 const MAP_URI = "ui://veda-mcp-app/map";
 
@@ -284,7 +284,7 @@ export function createServer(): McpServer {
   );
 
   // Picker cards load collection cover thumbnails (img-src).
-  registerViewResource(server, PICKER_URI, "picker.html", {
+  registerViewResource(server, PICKER_URI, "collection-picker.html", {
     resourceDomains: ["https://thumbnails.openveda.cloud"],
   });
   // Items view loads raster preview thumbnails (img-src).

@@ -64,19 +64,22 @@ test surface.
 
 ```
 view-contract.ts        View shapes + wire encode/decode (shared seam)
-picker.html/items.html/map.html   vite entries (script src -> ui/views/*)
+collection-picker.html/items.html/map.html   vite entries (script src -> ui/views/*)
 server/
   main.ts               transport bootstrap (stdio | HTTP), config validation
   server.ts             tool + resource registrations, CSP per view
   stac.ts               STAC catalog client: fetch/cache collections, items, previews
   dashboard-render.ts   render metadata -> map config, mappability guards
 ui/
-  views/picker.tsx      one file per tool widget: view component + mount
+  views/collection-picker.tsx   one file per tool widget: view component + mount
   views/items.tsx
   views/map.tsx         single-layer + swipe-compare maps (veda-ui-blocks)
   components/view-shell.tsx  common frame: connecting/error/waiting/debug
   components/cards.tsx  card adapters for collections/items
+  components/card-media.tsx  thumbnail <img> with tinted-globe fallback
   hooks/use-view-result.ts   useApp wrapper: parse tool result, surface errors
+  hooks/use-send-pick.ts     sendMessage pick flow (sending/error state)
+  lib/map-camera.ts     bbox -> initial camera math
   styles/               global.css + views.module.css
   veda-ui-blocks-stubs.ts  build stubs so picker/items skip the map stack
 ```
