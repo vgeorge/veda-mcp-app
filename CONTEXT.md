@@ -38,7 +38,10 @@ named after a concept, that concept belongs here.
   Map View, dispatched by the `kind` field (`"compare"` vs `"map"`). The left
   side's spatial extent sets the initial camera.
 - **View Contract** (`view-contract.ts`) — the single declaration of the View
-  wire shape, shared by server (write side, compile-time via inferred types)
-  and UI (read side, runtime via `parseView`). Unknown keys are stripped so an
-  older UI tolerates a newer server; a non-conforming payload throws and is
-  shown in the UI error banner.
+  wire shape AND its carriage, shared by server (write side, compile-time via
+  inferred types) and UI (read side, runtime via `parseView`). Unknown keys
+  are stripped so an older UI tolerates a newer server; a non-conforming
+  payload throws and is shown in the UI error banner. The wire round-trip
+  lives here too: `encodeViewResult` emits the view as structuredContent plus
+  a duplicate JSON text block (Claude Desktop strips structuredContent), and
+  `recoverView` reads it back, trying structuredContent then text blocks.
