@@ -23,27 +23,11 @@ const CollectionViewSchema = z.object({
   thumbnailHref: z.string().nullable(),
 });
 
-const ItemViewSchema = z.object({
-  id: z.string(),
-  start: z.string().nullable(),
-  end: z.string().nullable(),
-  previewHref: z.string().nullable(),
-  cogHref: z.string().nullable(),
-  bbox: z.array(z.number()).nullable(),
-});
-
 // Exported so server.ts can declare them as tool outputSchema (hosts may gate
 // structuredContent delivery to the widget on a declared schema).
 export const CollectionsViewSchema = z.object({
   kind: z.literal("collections"),
   collections: z.array(CollectionViewSchema),
-});
-
-
-export const ItemsViewSchema = z.object({
-  kind: z.literal("items"),
-  collectionId: z.string(),
-  items: z.array(ItemViewSchema),
 });
 
 // One side of a compare map: everything the veda-ui-blocks raster layer needs
@@ -86,16 +70,14 @@ export const CompareViewSchema = z.object({
 });
 
 export type CollectionView = z.infer<typeof CollectionViewSchema>;
-export type ItemView = z.infer<typeof ItemViewSchema>;
 export type CollectionsView = z.infer<typeof CollectionsViewSchema>;
-export type ItemsView = z.infer<typeof ItemsViewSchema>;
 export type MapView = z.infer<typeof MapViewSchema>;
 export type CompareView = z.infer<typeof CompareViewSchema>;
 
 // Union used by the server to type tool results at compile time. Each view
 // entry only ever parses its own variant (the map resource parses both map and
 // compare — see parseMapResourceView).
-export type View = CollectionsView | ItemsView | MapView | CompareView;
+export type View = CollectionsView | MapView | CompareView;
 
 // Parse a tool result's structuredContent against a view schema. Throws on a
 // payload that doesn't match the contract so the UI surfaces the drift in its
@@ -114,10 +96,6 @@ function parseWith<T>(schema: z.ZodType<T>, structuredContent: unknown): T {
 
 export function parseCollectionsView(structuredContent: unknown): CollectionsView {
   return parseWith(CollectionsViewSchema, structuredContent);
-}
-
-export function parseItemsView(structuredContent: unknown): ItemsView {
-  return parseWith(ItemsViewSchema, structuredContent);
 }
 
 export function parseMapView(structuredContent: unknown): MapView {

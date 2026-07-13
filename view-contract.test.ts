@@ -2,21 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   encodeViewResult,
   parseCollectionsView,
-  parseItemsView,
   parseMapResourceView,
   parseMapView,
   recoverView,
   type View,
 } from "./view-contract.js";
-
-const ITEM = {
-  id: "OMI_202312",
-  start: "2023-12-01T00:00:00Z",
-  end: "2023-12-31T00:00:00Z",
-  previewHref: "https://dev.openveda.cloud/api/raster/preview.png",
-  cogHref: "s3://bucket/OMI_202312.tif",
-  bbox: [-180, -90, 180, 90],
-};
 
 const COLLECTION = {
   id: "no2-monthly-diff",
@@ -54,48 +44,28 @@ describe("parseCollectionsView", () => {
   });
 
   it("rejects a different view kind", () => {
-    expect(() =>
-      parseCollectionsView({ kind: "items", collectionId: "x", items: [] }),
-    ).toThrow(/Unexpected result from server/);
-  });
-});
-
-describe("parseItemsView", () => {
-  it("parses an items view", () => {
-    const view = parseItemsView({
-      kind: "items",
-      collectionId: "no2-monthly",
-      items: [ITEM],
-    });
-    expect(view).toEqual({
-      kind: "items",
-      collectionId: "no2-monthly",
-      items: [ITEM],
-    });
+    expect(() => parseCollectionsView(MAP)).toThrow(
+      /Unexpected result from server/,
+    );
   });
 
   it("strips unknown keys so an older UI tolerates a newer server", () => {
-    const view = parseItemsView({
-      kind: "items",
-      collectionId: "no2-monthly",
-      items: [{ ...ITEM, futureField: "ignored" }],
+    const view = parseCollectionsView({
+      kind: "collections",
+      collections: [{ ...COLLECTION, futureField: "ignored" }],
       futureTopLevel: 42,
     });
-    expect(view).toEqual({
-      kind: "items",
-      collectionId: "no2-monthly",
-      items: [ITEM],
-    });
+    expect(view).toEqual({ kind: "collections", collections: [COLLECTION] });
   });
 
   it("throws on a missing required field, naming the path", () => {
-    expect(() => parseItemsView({ kind: "items", items: [ITEM] })).toThrow(
-      /collectionId/,
+    expect(() => parseCollectionsView({ kind: "collections" })).toThrow(
+      /collections/,
     );
   });
 
   it("throws on absent structuredContent", () => {
-    expect(() => parseItemsView(undefined)).toThrow(
+    expect(() => parseCollectionsView(undefined)).toThrow(
       /Unexpected result from server/,
     );
   });
@@ -133,21 +103,21 @@ const COMPARE = {
 
 describe("encodeViewResult", () => {
   it("carries the view as structuredContent plus a duplicate JSON text block", () => {
-    const view: View = { kind: "items", collectionId: "no2-monthly", items: [ITEM] };
-    const result = encodeViewResult("Items in no2-monthly", view);
+    const view: View = { kind: "collections", collections: [COLLECTION] };
+    const result = encodeViewResult("VEDA STAC collections", view);
     expect(result.structuredContent).toBe(view);
     // Exactly two text blocks, in order: the model reads block 0, hosts that
     // strip structuredContent recover the view from block 1.
     expect(result.content).toEqual([
-      { type: "text", text: "Items in no2-monthly" },
+      { type: "text", text: "VEDA STAC collections" },
       { type: "text", text: JSON.stringify(view) },
     ]);
   });
 });
 
 describe("recoverView", () => {
-  const parse = parseItemsView;
-  const view = { kind: "items", collectionId: "no2-monthly", items: [ITEM] };
+  const parse = parseCollectionsView;
+  const view = { kind: "collections", collections: [COLLECTION] };
 
   it("recovers from structuredContent when present", () => {
     const r = recoverView({ structuredContent: view, content: [] }, parse);
@@ -155,7 +125,7 @@ describe("recoverView", () => {
   });
 
   it("surfaces the contract error for a non-conforming structuredContent", () => {
-    const r = recoverView({ structuredContent: { kind: "items" } }, parse);
+    const r = recoverView({ structuredContent: { kind: "collections" } }, parse);
     expect(r.error).toMatch(/Unexpected result from server/);
   });
 
@@ -192,11 +162,6 @@ describe("wire round-trip with structuredContent stripped (Claude Desktop)", () 
       name: "collections",
       view: { kind: "collections", collections: [COLLECTION] },
       parse: parseCollectionsView,
-    },
-    {
-      name: "items",
-      view: { kind: "items", collectionId: "no2-monthly", items: [ITEM] },
-      parse: parseItemsView,
     },
     { name: "map", view: MAP as View, parse: parseMapResourceView },
     { name: "compare", view: COMPARE as View, parse: parseMapResourceView },

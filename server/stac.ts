@@ -25,21 +25,6 @@ export interface CollectionSummary {
   thumbnailHref: string | null;
 }
 
-export interface ItemSummary {
-  id: string;
-  start: string | null;
-  end: string | null;
-  previewHref: string | null;
-  cogHref: string | null;
-  bbox: number[] | null;
-}
-
-export interface ListItemsOptions {
-  limit?: number;
-  bbox?: number[];
-  datetime?: string;
-}
-
 // Only the fields we consume. `.passthrough()` keeps parsing lenient against
 // the many optional STAC fields we ignore.
 const AssetSchema = z.object({ href: z.string().optional() }).passthrough();
@@ -95,23 +80,6 @@ export const ItemsResponseSchema = z
   .object({ features: z.array(z.unknown()) })
   .passthrough();
 
-const CollectionMetaSchema = z
-  .object({ renders: z.record(z.string(), z.unknown()).optional() })
-  .passthrough();
-
-// A collection's render definition (subset of fields we use to style previews).
-interface RenderParams {
-  assets?: string[];
-  bidx?: number[];
-  rescale?: number[]; // [min, max]
-  colormap_name?: string;
-  color_formula?: string;
-  resampling?: string;
-}
-
-// Per-collection cache of the dashboard render params used to style previews.
-const renderCache = new Map<string, RenderParams | null>();
-
 // TTL cache for the full collection list (avoids re-fetching ~545 collections
 // on every search). Module-level; lives for the process lifetime.
 const COLLECTIONS_TTL_MS = 60_000;
@@ -147,70 +115,7 @@ function temporalFromExtent(
 
 // Test-only: clear all caches.
 export function _resetCaches(): void {
-  renderCache.clear();
   collectionsCache = null;
-}
-
-// Fetch the collection metadata for its render params. Null results are cached
-// (404, or a collection with no renders) so we don't refetch; transient errors
-// (network failure, 5xx) return null for THIS call without caching, so the next
-// call retries.
-async function getDashboardRender(
-  collectionId: string,
-): Promise<RenderParams | null> {
-  if (renderCache.has(collectionId)) {
-    return renderCache.get(collectionId) ?? null;
-  }
-  let params: RenderParams | null = null;
-  let cacheable = true;
-  try {
-    const data = CollectionMetaSchema.parse(
-      await fetchJson(`${STAC_ROOT}/collections/${encodeURIComponent(collectionId)}`),
-    );
-    const renders = data.renders ?? {};
-    const chosen =
-      (renders.dashboard as RenderParams | undefined) ??
-      (Object.values(renders)[0] as RenderParams | undefined);
-    if (chosen) {
-      const rescale = Array.isArray(chosen.rescale?.[0])
-        ? (chosen.rescale as unknown as number[][])[0]
-        : chosen.rescale;
-      params = { ...chosen, rescale };
-    }
-  } catch (e) {
-    params = null;
-    const status = (e as { status?: number }).status;
-    // Network failure (no status) or 5xx are transient — don't pin null.
-    if (status === undefined || (typeof status === "number" && status >= 500)) {
-      cacheable = false;
-    }
-  }
-  if (cacheable) renderCache.set(collectionId, params);
-  return params;
-}
-
-// Build a titiler preview URL for an item. The STAC `rendered_preview_dashboard`
-// asset href is unreliable on this deployment, so we construct the preview from
-// the raster API using the collection's dashboard render params. The render's
-// named asset is used when the item actually exposes it; otherwise we fall back
-// to `cog_default` (the default COG layer VEDA attaches to most items).
-function buildPreviewUrl(
-  collectionId: string,
-  itemId: string,
-  render: RenderParams | null,
-  itemAssetKeys: string[],
-): string {
-  const renderAsset = render?.assets?.[0];
-  const asset = renderAsset && itemAssetKeys.includes(renderAsset) ? renderAsset : "cog_default";
-  const params = new URLSearchParams({ assets: asset });
-  for (const b of render?.bidx ?? []) params.append("bidx", String(b));
-  if (render?.rescale && render.rescale.length === 2) {
-    params.set("rescale", `${render.rescale[0]},${render.rescale[1]}`);
-  }
-  if (render?.colormap_name) params.set("colormap_name", render.colormap_name);
-  if (render?.color_formula) params.set("color_formula", render.color_formula);
-  if (render?.resampling) params.set("resampling", render.resampling);
-  return `${RASTER_ROOT}/collections/${encodeURIComponent(collectionId)}/items/${encodeURIComponent(itemId)}/preview.png?${params}`;
 }
 
 export async function fetchJson(url: string): Promise<unknown> {
@@ -285,31 +190,3 @@ export async function searchCollections(
   }));
 }
 
-export async function listItems(
-  collectionId: string,
-  { limit = 6, bbox, datetime }: ListItemsOptions = {},
-): Promise<ItemSummary[]> {
-  const params = new URLSearchParams({ limit: String(limit) });
-  if (bbox?.length) params.set("bbox", bbox.join(","));
-  if (datetime) params.set("datetime", datetime);
-
-  const data = await fetchJson(
-    `${STAC_ROOT}/collections/${encodeURIComponent(collectionId)}/items?${params}`,
-  );
-  const { features } = ItemsResponseSchema.parse(data);
-  const parsed = parseEach(features, ItemSchema, "item");
-  const render = await getDashboardRender(collectionId);
-
-  return parsed.map((item) => {
-    const props = item.properties ?? {};
-    const assetKeys = Object.keys(item.assets ?? {});
-    return {
-      id: item.id,
-      start: props.start_datetime ?? props.datetime ?? null,
-      end: props.end_datetime ?? props.datetime ?? null,
-      previewHref: buildPreviewUrl(collectionId, item.id, render, assetKeys),
-      cogHref: item.assets?.cog_default?.href ?? null,
-      bbox: item.bbox ?? null,
-    };
-  });
-}

@@ -31,16 +31,6 @@
   word-break: break-word;
 }
 
-/* Items: a simple vertical stack of full-width rows. */
-.cardList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
 /* Collections: responsive tile row — 1 column in the ~425px Desktop panel,
  * more in wider hosts. Flex (not grid): a partial last row (e.g. 2 results)
  * centers via justify-content instead of hugging the left edge — grid can't do
@@ -125,36 +115,6 @@
   :global(.blocks-card-detailed__actions .usa-button) {
     width: 100%;
     justify-content: center;
-  }
-}
-
-/* CardDetailed image-left assumes a wide page (200px media column); scale the
- * media column for the MCP panel and keep long STAC item ids from overflowing. */
-.itemCard.itemCard {
-  grid-template-columns: 120px 1fr;
-  min-height: 120px;
-  border: 1px solid var(--color-border, #dfe1e2);
-  border-radius: var(--border-radius-md);
-  background: var(--color-bg, #fff);
-  overflow: hidden;
-
-  :global(.blocks-card-detailed__title) {
-    font-size: 1rem;
-    overflow-wrap: anywhere;
-  }
-
-  :global(.blocks-card-detailed__content-container) {
-    padding: var(--spacing-md);
-  }
-}
-
-.subhead {
-  margin-bottom: var(--spacing-sm);
-  font-size: 1rem;
-
-  > :global(.blocks-tag) {
-    margin-left: var(--spacing-sm);
-    vertical-align: middle;
   }
 }
 

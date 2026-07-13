@@ -6,19 +6,16 @@ import path from "node:path";
 import { z } from "zod";
 import { getMapConfig, MapConfigError } from "./dashboard-render.js";
 import {
-  listItems,
   RASTER_HOST,
   RASTER_ROOT,
   searchCollections,
   STAC_ROOT,
   type CollectionSummary,
-  type ItemSummary,
 } from "./stac.js";
 import {
   CollectionsViewSchema,
   CompareViewSchema,
   encodeViewResult,
-  ItemsViewSchema,
   MapViewSchema,
   type View,
 } from "../view-contract.js";
@@ -26,7 +23,6 @@ import {
 // One resource per step view; each tool's `_meta.ui.resourceUri` picks the
 // view the host renders inline for that tool's result.
 const PICKER_URI = "ui://veda-mcp-app/collection-picker";
-const ITEMS_URI = "ui://veda-mcp-app/items";
 const MAP_URI = "ui://veda-mcp-app/map";
 
 // Origins the map iframe fetches from at runtime: the STAC/raster APIs (map
@@ -67,17 +63,6 @@ function collectionsResult(collections: CollectionSummary[]): CallToolResult {
   return encodeViewResult(`VEDA STAC collections:\n${text}`, {
     kind: "collections",
     collections,
-  });
-}
-
-function itemsResult(collectionId: string, items: ItemSummary[]): CallToolResult {
-  const text = items.length
-    ? items.map((i) => `- ${i.id} (${i.start ?? "?"} to ${i.end ?? "?"})`).join("\n")
-    : "No items found.";
-  return encodeViewResult(`Items in ${collectionId}:\n${text}`, {
-    kind: "items",
-    collectionId,
-    items,
   });
 }
 
@@ -213,27 +198,6 @@ export function createServer(): McpServer {
   );
 
   registerAppTool(server,
-    "list_items",
-    {
-      title: "List collection items",
-      description:
-        "List items (dated scenes) in a VEDA STAC collection. Each item carries a raster preview and a COG asset. Optionally filter by bbox and datetime range.",
-      inputSchema: {
-        collectionId: z.string().describe("STAC collection id, e.g. no2-monthly"),
-        limit: z.number().int().min(1).max(50).optional().describe("Max items to return (default 6)"),
-        bbox: z.array(z.number()).length(4).optional().describe("[west, south, east, north]"),
-        datetime: z.string().optional().describe("ISO-8601 datetime or range 'start/end'"),
-      },
-      outputSchema: ItemsViewSchema.shape,
-      _meta: { ui: { resourceUri: ITEMS_URI } },
-    },
-    async ({ collectionId, limit, bbox, datetime }): Promise<CallToolResult> => {
-      const items = await listItems(collectionId, { limit, bbox, datetime });
-      return itemsResult(collectionId, items);
-    },
-  );
-
-  registerAppTool(server,
     "show_map",
     {
       title: "Show collection map",
@@ -286,10 +250,6 @@ export function createServer(): McpServer {
   // Picker cards load collection cover thumbnails (img-src).
   registerViewResource(server, PICKER_URI, "collection-picker.html", {
     resourceDomains: ["https://thumbnails.openveda.cloud"],
-  });
-  // Items view loads raster preview thumbnails (img-src).
-  registerViewResource(server, ITEMS_URI, "items.html", {
-    resourceDomains: [RASTER_HOST],
   });
   // Map view fetches the APIs + basemap (connect-src) and tile images.
   registerViewResource(server, MAP_URI, "map.html", {

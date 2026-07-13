@@ -1,6 +1,6 @@
 // Adapters mapping view-contract types onto veda-ui-blocks cards.
 import { CardDetailed, Tag } from "@teamimpact/veda-ui-blocks";
-import type { CollectionView, ItemView } from "../../view-contract";
+import type { CollectionView } from "../../view-contract";
 import styles from "../styles/views.module.css";
 import { CardMedia } from "./card-media";
 
@@ -37,22 +37,6 @@ export function CollectionCard({ collection, busy, onPick }: CollectionCardProps
         onClick: () => onPick(collection),
         disabled: busy,
       }}
-    />
-  );
-}
-
-interface ItemCardProps {
-  item: ItemView;
-}
-
-export function ItemCard({ item }: ItemCardProps) {
-  return (
-    <CardDetailed
-      className={styles.itemCard}
-      imagePosition="left"
-      image={<CardMedia id={item.id} href={item.previewHref} />}
-      title={item.id}
-      description={`${item.start ?? "?"} → ${item.end ?? "?"}`}
     />
   );
 }

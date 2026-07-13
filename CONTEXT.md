@@ -8,14 +8,14 @@ named after a concept, that concept belongs here.
   YYYY-MM-DD start/end, ends null = open) so date ranges can be discussed
   without another tool call + thumbnail href (nullable; the collection's
   `assets.thumbnail` cover image, http(s) only).
-- **Item** — a dated scene inside a Collection, carrying a raster preview and
-  a COG asset.
+- **Item** — a dated scene inside a Collection. Not exposed as a view; items
+  are probed server-side to validate that a Collection's render metadata
+  matches the assets its items actually carry.
 - **Dashboard Render** (`server/dashboard-render.ts`) — a Collection's `renders.dashboard` styling params
-  (asset, bidx, rescale, colormap) used to build item previews via the titiler
-  raster API. Resolution rule: use the render's named asset when the item
-  exposes it, else fall back to `cog_default`.
+  (asset, bidx, rescale, colormap) that the map component forwards to the
+  titiler raster API.
 - **View** — one step of the chat flow, carried in a tool result's
-  `structuredContent` (`collections` | `items` | `map`). Each view is its own
+  `structuredContent` (`collections` | `map` | `compare`). Each view is its own
   single-file bundle and MCP resource with a CSP scoped to what it loads; each
   tool's `_meta.ui.resourceUri` selects its view. There is no app-like widget:
   no toolbar, no widget-local navigation — interactions advance the chat.

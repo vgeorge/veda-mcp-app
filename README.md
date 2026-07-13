@@ -1,7 +1,7 @@
 # veda-mcp-app
 
 MCP App for the VEDA STAC catalog: tools that render interactive widgets
-(collection picker, item list, raster map) inline in Claude or ChatGPT.
+(collection picker, raster map) inline in Claude or ChatGPT.
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — MCP concepts and how this repo maps onto them
 - [CONTEXT.md](CONTEXT.md) — domain glossary
@@ -10,8 +10,6 @@ MCP App for the VEDA STAC catalog: tools that render interactive widgets
 
 - `search_collections(query?, limit?)` — search/list collections; renders the
   picker, clicking a card announces the pick in the chat.
-- `list_items(collectionId, limit?, bbox?, datetime?)` — dated scenes with
-  raster preview thumbnails.
 - `show_map(collectionId, datetime)` — single-layer raster map over a date
   range (`YYYY-MM-DD` or `YYYY-MM-DD/YYYY-MM-DD`, clamped to the collection's
   temporal extent). Non-mappable collections are rejected with a corrective

@@ -64,32 +64,31 @@ test surface.
 
 ```
 view-contract.ts        View shapes + wire encode/decode (shared seam)
-collection-picker.html/items.html/map.html   vite entries (script src -> ui/views/*)
+collection-picker.html/map.html   vite entries (script src -> ui/views/*)
 server/
   main.ts               transport bootstrap (stdio | HTTP), config validation
   server.ts             tool + resource registrations, CSP per view
-  stac.ts               STAC catalog client: fetch/cache collections, items, previews
+  stac.ts               STAC catalog client: fetch/cache/search collections
   dashboard-render.ts   render metadata -> map config, mappability guards
 ui/
   views/collection-picker.tsx   one file per tool widget: view component + mount
-  views/items.tsx
   views/map.tsx         single-layer + swipe-compare maps (veda-ui-blocks)
   components/view-shell.tsx  common frame: connecting/error/waiting/debug
-  components/cards.tsx  card adapters for collections/items
+  components/cards.tsx  collection card adapter
   components/card-media.tsx  thumbnail <img> with tinted-globe fallback
   hooks/use-view-result.ts   useApp wrapper: parse tool result, surface errors
   hooks/use-send-pick.ts     sendMessage pick flow (sending/error state)
   lib/map-camera.ts     bbox -> initial camera math
   styles/               global.css + views.module.css
-  veda-ui-blocks-stubs.ts  build stubs so picker/items skip the map stack
+  veda-ui-blocks-stubs.ts  build stubs so the picker skips the map stack
 ```
 
 Data flow: tool call → STAC client (`server/stac.ts`, live catalog at
 `dev.openveda.cloud`) → View → `encodeViewResult` → host → iframe →
 `recoverView` → React render.
 
-Build (`npm run build`): typecheck, then three vite single-file builds
-(INPUT env var selects the entry; non-map entries stub the heavy map deps),
+Build (`npm run build`): typecheck, then a vite single-file build per entry
+(INPUT env var selects it; the picker entry stubs the heavy map deps),
 then `tsc -p tsconfig.server.json` → `dist/server/`.
 
 ## Verifying changes

@@ -26,7 +26,7 @@ const STUBS: Record<string, string> = {
     ? {}
     : {
         // StacCompareMap (mapbox-gl-compare) is only mounted by the map entry;
-        // the picker/items entries don't render it, so they stub it.
+        // the picker entry doesn't render it, so it stubs it.
         "mapbox-gl-compare": VEDA_UI_BLOCKS_STUB,
         "maplibre-gl": VEDA_UI_BLOCKS_STUB,
         "react-map-gl/maplibre": VEDA_UI_BLOCKS_STUB,
