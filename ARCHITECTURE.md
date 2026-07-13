@@ -90,6 +90,7 @@ then `tsc -p tsconfig.server.json` → `dist/server/`.
 ## Verifying changes
 
 - `npm test` — STAC client, dashboard-render guards, wire round-trip.
-- End-to-end widget behavior needs a real MCP Apps host: use the
-  `veda-mcp-app-happy-path` skill (basic-host + Chrome DevTools MCP) —
-  run_demo map render, picker cards, card click → sendMessage.
+- End-to-end widget behavior needs a real MCP Apps host: run `basic-host`
+  from the [ext-apps repo](https://github.com/modelcontextprotocol/ext-apps)
+  against this server on :3001 and check run_demo map render, picker cards,
+  and card click → sendMessage in its Messages panel.

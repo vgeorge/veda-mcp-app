@@ -1,10 +1,7 @@
 # veda-mcp-app
 
-MCP App for a VEDA STAC catalog: an MCP server whose tools render interactive
-React widgets (collection picker, item list, raster map) inline in Claude or
-ChatGPT. Searches the live VEDA STAC API and renders with
-`@teamimpact/veda-ui-blocks`. The flow is chat-first: clicking a widget sends
-a message into the conversation so the model drives the next step.
+MCP App for the VEDA STAC catalog: tools that render interactive widgets
+(collection picker, item list, raster map) inline in Claude or ChatGPT.
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — MCP concepts and how this repo maps onto them
 - [CONTEXT.md](CONTEXT.md) — domain glossary
@@ -49,8 +46,10 @@ npm run build        # typecheck + UI bundles + server -> dist/
 To run the compiled output exactly as production does:
 `npm run build`, then `npm run start:prod`.
 
-To verify the widgets end-to-end in a local MCP Apps host, use the
-`veda-mcp-app-happy-path` skill (basic-host + Chrome DevTools MCP).
+To verify the widgets end-to-end without Claude, use `basic-host` (the
+reference host in the [ext-apps repo](https://github.com/modelcontextprotocol/ext-apps),
+`examples/basic-host`): it expects this server at `http://localhost:3001/mcp`
+and renders the widgets in a sandboxed iframe with debug panels.
 
 ## Deployment (Heroku)
 
