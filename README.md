@@ -41,6 +41,9 @@ npm test             # unit tests (vitest)
 npm run build        # typecheck + UI bundles + server -> dist/
 ```
 
+`npm run serve` and `npm run start:prod` load env vars from `.env` when it
+exists (gitignored), e.g. `MCP_PATH_TOKEN=<token>`.
+
 To run the compiled output exactly as production does:
 `npm run build`, then `npm run start:prod`.
 
@@ -49,11 +52,41 @@ reference host in the [ext-apps repo](https://github.com/modelcontextprotocol/ex
 `examples/basic-host`): it expects this server at `http://localhost:3001/mcp`
 and renders the widgets in a sandboxed iframe with debug panels.
 
-## Deployment (Heroku)
+## Deployment
 
-HTTP-first: `POST /mcp` (Streamable HTTP, stateless) + `GET /health`. Needs a
-long-lived process — not serverless. `Procfile` runs `npm run start:prod`;
-`engines.node: 22.x` pins the runtime.
+HTTP-first: `POST /mcp` (Streamable HTTP, stateless: a fresh server per
+request, no session) + `GET /health`. Other methods on `/mcp` return 405 (no
+standalone SSE stream). The Express app is built in `server/app.ts`; it runs
+as a serverless function or a long-lived process.
+
+Env vars (all optional):
+
+- `MCP_PATH_TOKEN` — shared-secret path segment: endpoint moves to
+  `/mcp/<token>`, bare `/mcp` 404s. Letters/digits/`-`/`_` only. Required
+  for any public deploy: it is the only access gate.
+- `VEDA_STAC_ROOT` / `VEDA_RASTER_ROOT` — catalog/titiler roots.
+
+### Vercel
+
+Vercel's Git integration deploys: push to `main` redeploys production, PRs
+get preview deployments (behind Vercel's default protection). GitHub Actions
+(`.github/workflows/ci.yml`) only typechecks, tests and builds.
+
+- `api/index.js` exports the Express app as one function; `vercel.json`
+  rewrites every path to it, runs `npm run build`, and ships `dist/*.html`
+  (the view bundles read at request time) via `includeFiles`.
+- `engines.node: 22.x` pins the runtime.
+
+One-time setup (dashboard): import the repo, set `MCP_PATH_TOKEN`
+(`openssl rand -hex 16`) for Production, make sure Deployment Protection
+does not cover Production.
+
+Verify: `curl https://<domain>/health` → `{"status":"ok","transport":"http"}`.
+The connector URL is `https://<domain>/mcp/<token>`.
+
+### Heroku (alternative)
+
+`Procfile` runs `npm run start:prod`.
 
 ```bash
 heroku create <app-name>
@@ -63,35 +96,37 @@ git push heroku main
 
 Use a Basic dyno (Eco dynos sleep; a cold start mid-demo takes ~10-30 s).
 
-Env vars (all optional):
-
-- `MCP_PATH_TOKEN` — shared-secret path segment: endpoint moves to
-  `/mcp/<token>`, bare `/mcp` 404s. Letters/digits/`-`/`_` only. Recommended
-  for any public deploy.
-- `VEDA_STAC_ROOT` / `VEDA_RASTER_ROOT` — catalog/titiler roots.
-
-Verify: `curl https://<app-name>.herokuapp.com/health` →
-`{"status":"ok","transport":"http"}`. The connector URL is
-`https://<app-name>.herokuapp.com/mcp/<token>`.
-
 ### Connecting
+
+The connector URL has the shape `https://<domain>/mcp/<token>`.
 
 - **claude.ai / Claude Desktop**: Settings → Connectors → Add custom
   connector → paste the connector URL. No auth (the token in the URL is the
   gate). Widgets render inline.
 - **Claude Code**:
-  `claude mcp add --transport http veda https://<app-name>.herokuapp.com/mcp/<token>`
+  `claude mcp add --transport http veda https://<domain>/mcp/<token>`
 - **ChatGPT**: Settings → Connectors → Create new connector → MCP server URL
   = the connector URL, auth: none.
 
+Local-only fallback (no deploy needed, Claude Desktop / Claude Code):
+
+```bash
+git clone https://github.com/vgeorge/veda-mcp-app
+cd veda-mcp-app
+npm install
+npm run setup:claude
+```
+
+Restart Claude Desktop, then ask it to "run a demo of the VEDA MCP app".
+
 ### Troubleshooting
 
-- **502 after deploy** — `heroku logs --tail`; if the
-  `VEDA MCP App (HTTP transport)` banner is absent, the process crashed at
-  boot (config validation errors print the reason).
+- **500 / function crash on Vercel** — check the function logs; config
+  validation errors print the reason. On Heroku, `heroku logs --tail`: if
+  the `VEDA MCP App (HTTP transport)` banner is absent, boot failed.
 - **404 on `/mcp`** — expected when `MCP_PATH_TOKEN` is set; use
   `/mcp/<token>`.
-- **First request hangs ~30 s** — Eco dyno waking. Upgrade to Basic.
+- **First request slow** — cold start (Vercel function or Heroku Eco dyno).
 - **HTTPS required** — Claude and ChatGPT only connect to `https://`
   endpoints.
 - **Tool answers "cannot be mapped" / "unknown collection"** — corrective by

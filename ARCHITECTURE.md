@@ -19,8 +19,9 @@ Transports (`server/main.ts`):
 - **stdio** — the host launches the server as a subprocess (Claude
   Desktop/Code, local). `--stdio` flag.
 - **Streamable HTTP** — remote hosts (claude.ai, ChatGPT) POST to `/mcp`.
-  Stateless: a fresh `McpServer` per request, so it scales on one dyno and
-  survives restarts.
+  Stateless: a fresh `McpServer` per request, so it runs as a serverless
+  function (Vercel, `api/index.js`) or one long-lived process. The Express
+  app lives in `server/app.ts`.
 
 ## What makes it an MCP App
 
@@ -67,6 +68,7 @@ view-contract.ts        View shapes + wire encode/decode (shared seam)
 collection-picker.html/map.html   vite entries (script src -> ui/views/*)
 server/
   main.ts               transport bootstrap (stdio | HTTP)
+  app.ts                Express app for Streamable HTTP (no listen)
   config.ts             env-derived roots + startup validation
   server.ts             tool + resource registrations, CSP per view
   stac.ts               STAC catalog client: fetch/cache/search collections
