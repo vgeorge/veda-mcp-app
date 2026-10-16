@@ -1,5 +1,5 @@
 // Adapters mapping view-contract types onto veda-ui-blocks cards.
-import { CardDetailed, Tag } from "@teamimpact/veda-ui-blocks";
+import { CardDetailed } from "@teamimpact/veda-ui-blocks";
 import type { CollectionView } from "../../view-contract";
 import styles from "../styles/views.module.css";
 import { CardMedia } from "./card-media";
@@ -28,7 +28,7 @@ export function CollectionCard({ collection, busy, onPick }: CollectionCardProps
       image={<CardMedia id={collection.id} href={collection.thumbnailHref} />}
       title={collection.title}
       description={collection.description ?? collection.id}
-      tagPrimary={coverage ? <Tag>{coverage}</Tag> : undefined}
+      tagPrimary={coverage ? { label: coverage } : undefined}
       callToAction={{
         label: "Select",
         as: "button",
