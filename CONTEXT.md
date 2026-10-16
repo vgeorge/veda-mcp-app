@@ -43,5 +43,6 @@ named after a concept, that concept belongs here.
   are stripped so an older UI tolerates a newer server; a non-conforming
   payload throws and is shown in the UI error banner. The wire round-trip
   lives here too: `encodeViewResult` emits the view as structuredContent plus
-  a duplicate JSON text block (Claude Desktop strips structuredContent), and
+  a duplicate JSON text block (for hosts that strip structuredContent, as
+  Claude Desktop did in mid-2026), and
   `recoverView` reads it back, trying structuredContent then text blocks.

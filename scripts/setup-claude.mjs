@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Registers veda-mcp-app with local Claude hosts using absolute paths.
+ * Registers veda-ui-mcp with local Claude hosts using absolute paths.
  * Flags: --print (dry run), --remove, --desktop-only, --code-only.
  */
 import { spawnSync } from "node:child_process";
@@ -9,7 +9,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SERVER_NAME = "veda-mcp-app";
+const SERVER_NAME = "veda-ui-mcp";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");

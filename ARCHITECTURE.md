@@ -46,12 +46,13 @@ for the map).
 ## The wire contract
 
 `view-contract.ts` (repo root — the one module both sides import) declares
-the View shapes (Zod schemas: `collections` | `items` | `map` | `compare`)
+the View shapes (Zod schemas: `collections` | `map` | `compare`)
 and the carriage:
 
 - `encodeViewResult(text, view)` — server side. Emits the view as
-  `structuredContent` **plus a duplicate JSON text block**, because Claude
-  Desktop strips `structuredContent` before the widget sees it.
+  `structuredContent` **plus a duplicate JSON text block**, for hosts that
+  strip `structuredContent` before the widget sees it (Claude Desktop did in
+  mid-2026).
 - `recoverView(result, parse)` — widget side. Tries `structuredContent`,
   then JSON-parses text blocks; returns the view or an error string for the
   widget's error banner.

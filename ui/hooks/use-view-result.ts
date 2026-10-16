@@ -59,7 +59,7 @@ export function useViewResult<T>(
     onAppCreated: (app) => {
       app.ontoolresult = async (result) => {
         setDebug(summarizeResult(result as RawToolResult));
-        // recoverView handles host delivery differences (Claude Desktop strips
+        // recoverView handles host delivery differences (hosts that strip
         // structuredContent; the view is recovered from the JSON text block)
         // and surfaces tool/contract errors as an error string.
         const recovered = recoverView(result as WireToolResult, parse);

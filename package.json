@@ -1,15 +1,14 @@
 {
-  "name": "veda-mcp-app",
+  "name": "veda-ui-mcp",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "MCP App (Apps SDK) for interacting with a VEDA STAC catalog. Scaffold: wired hello-world tool + React UI resource.",
-  "license": "MIT",
+  "description": "MCP App for the VEDA STAC catalog: tools that render interactive veda-ui-blocks widgets inline in chat hosts.",
   "engines": {
     "node": "22.x"
   },
   "bin": {
-    "veda-mcp-app": "dist/server/main.js"
+    "veda-ui-mcp": "dist/server/main.js"
   },
   "scripts": {
     "build": "tsc --noEmit && npm run build:ui && npm run build:server",

@@ -126,11 +126,11 @@ export interface WireToolResult {
 
 // Build a tool result carrying the view both as structuredContent (the channel
 // conformant hosts like basic-host deliver to the widget) AND as a JSON text
-// content block. Claude Desktop strips structuredContent before handing the
-// result to the widget sandbox and substitutes a placeholder text block, but
-// it passes content text blocks through intact — so the widget recovers the
-// view by JSON-parsing the text blocks (see recoverView). The model also sees
-// this JSON block, which is acceptable.
+// content block. Some hosts strip structuredContent before handing the result
+// to the widget sandbox but pass content text blocks through intact (Claude
+// Desktop did in mid-2026) — so the widget can recover the view by
+// JSON-parsing the text blocks (see recoverView). The model also sees this
+// JSON block, which is acceptable.
 export function encodeViewResult(humanText: string, view: View) {
   return {
     content: [
@@ -146,7 +146,7 @@ export type RecoveredView<T> =
   | { view?: undefined; error: string };
 
 // Recover the view from a tool result as delivered by the host: try
-// structuredContent, then JSON-parse text blocks (the Claude Desktop path).
+// structuredContent, then JSON-parse text blocks (hosts that strip it).
 // A result with no recoverable view yields the tool's error text (or a
 // generic message) for the UI error banner.
 export function recoverView<T>(

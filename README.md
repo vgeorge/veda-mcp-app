@@ -1,4 +1,4 @@
-# veda-mcp-app
+# veda-ui-mcp
 
 MCP App for the VEDA STAC catalog: tools that render interactive widgets
 (collection picker, raster map) inline in Claude or ChatGPT.
@@ -17,7 +17,7 @@ MCP App for the VEDA STAC catalog: tools that render interactive widgets
 - `compare_map(leftCollectionId, leftDatetime, rightCollectionId, rightDatetime)`
   — swipe-compare; same collection twice = before/after.
 - `run_demo()` — map of `no2-monthly-diff` for 2020-2021. Ask the host to
-  "run a demo of the VEDA MCP app".
+  "run a demo of VEDA UI MCP".
 
 ## Quick start
 
@@ -26,7 +26,7 @@ npm install          # auto-builds dist/ (prepare script)
 npm run setup:claude # register with Claude Desktop + Claude Code
 ```
 
-Restart Claude Desktop, then ask it to "run a demo of the VEDA MCP app".
+Restart Claude Desktop, then ask it to "run a demo of VEDA UI MCP".
 
 ## Local development
 
@@ -111,19 +111,19 @@ The connector URL has the shape `https://<domain>/mcp/<token>`.
 Local-only fallback (no deploy needed, Claude Desktop / Claude Code):
 
 ```bash
-git clone https://github.com/vgeorge/veda-mcp-app
-cd veda-mcp-app
+git clone https://github.com/NASA-IMPACT/veda-ui-mcp
+cd veda-ui-mcp
 npm install
 npm run setup:claude
 ```
 
-Restart Claude Desktop, then ask it to "run a demo of the VEDA MCP app".
+Restart Claude Desktop, then ask it to "run a demo of VEDA UI MCP".
 
 ### Troubleshooting
 
 - **500 / function crash on Vercel** — check the function logs; config
   validation errors print the reason. On Heroku, `heroku logs --tail`: if
-  the `VEDA MCP App (HTTP transport)` banner is absent, boot failed.
+  the `VEDA UI MCP (HTTP transport)` banner is absent, boot failed.
 - **404 on `/mcp`** — expected when `MCP_PATH_TOKEN` is set; use
   `/mcp/<token>`.
 - **First request slow** — cold start (Vercel function or Heroku Eco dyno).

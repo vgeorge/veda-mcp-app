@@ -156,7 +156,7 @@ describe("recoverView", () => {
   });
 });
 
-describe("wire round-trip with structuredContent stripped (Claude Desktop)", () => {
+describe("wire round-trip with structuredContent stripped by the host", () => {
   const cases: { name: string; view: View; parse: (sc: unknown) => View }[] = [
     {
       name: "collections",
