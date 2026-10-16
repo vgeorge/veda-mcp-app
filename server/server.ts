@@ -17,8 +17,8 @@ import {
 
 // One resource per step view; each tool's `_meta.ui.resourceUri` picks the
 // view the host renders inline for that tool's result.
-const PICKER_URI = "ui://veda-mcp-app/collection-picker";
-const MAP_URI = "ui://veda-mcp-app/map";
+const PICKER_URI = "ui://veda-ui-mcp/collection-picker";
+const MAP_URI = "ui://veda-ui-mcp/map";
 
 // Origins the map iframe fetches from at runtime: the STAC/raster APIs (map
 // layer + tiles) and the Carto basemap (style.json on the apex host;
@@ -164,7 +164,7 @@ function registerViewResource(
 
 export function createServer(): McpServer {
   const server = new McpServer({
-    name: "VEDA MCP App",
+    name: "VEDA UI MCP",
     version: "0.1.0",
   });
 
@@ -207,9 +207,9 @@ export function createServer(): McpServer {
   registerAppTool(server,
     "run_demo",
     {
-      title: "Run VEDA MCP app demo",
+      title: "Run VEDA UI MCP demo",
       description:
-        `Run a demo of the VEDA MCP app: renders an interactive map of the "${DEMO_COLLECTION}" (Nitrogen Dioxide difference) collection for 2020-2021. Use when asked to "run a demo".`,
+        `Run a demo of VEDA UI MCP: renders an interactive map of the "${DEMO_COLLECTION}" (Nitrogen Dioxide difference) collection for 2020-2021. Use when asked to "run a demo".`,
       inputSchema: {},
       outputSchema: MapViewSchema.shape,
       _meta: { ui: { resourceUri: MAP_URI } },

@@ -23,7 +23,7 @@ export async function startStreamableHTTPServer(
       console.error("Failed to start server:", err);
       process.exit(1);
     }
-    console.log("VEDA MCP App (HTTP transport)");
+    console.log("VEDA UI MCP (HTTP transport)");
     console.log(`  port:        ${port}`);
     console.log(`  stac root:   ${STAC_ROOT}`);
     console.log(`  raster root: ${RASTER_ROOT}`);
