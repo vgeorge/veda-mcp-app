@@ -30,7 +30,7 @@ function MapView({ view }: { view: MapViewData | CompareView }) {
           <StacSingleLayerMap
             baseMapStyle={CARTO_DARK_WITH_LABELS_BASEMAP_STYLE}
             initialViewState={viewStateFromBbox(view.bbox)}
-            showScrollGuard
+            cooperativeGestures
             layerConfig={{
               type: "raster",
               collectionId: view.collectionId,
@@ -42,7 +42,7 @@ function MapView({ view }: { view: MapViewData | CompareView }) {
           <StacCompareMap
             baseMapStyle={CARTO_DARK_WITH_LABELS_BASEMAP_STYLE}
             initialViewState={viewStateFromBbox(view.bbox)}
-            showScrollGuard
+            cooperativeGestures
             leftLayerConfig={{
               type: "raster",
               collectionId: view.left.collectionId,

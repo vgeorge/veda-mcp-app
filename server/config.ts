@@ -13,6 +13,12 @@ export const RASTER_ROOT =
 // Origin of the raster host; the UI resource allowlists it via CSP for img-src.
 export const RASTER_HOST = new URL(RASTER_ROOT).origin;
 
+// Optional shared-secret path segment: with MCP_PATH_TOKEN=abc the endpoint
+// becomes /mcp/abc, so only people given the full URL can reach the server.
+export const MCP_PATH = process.env.MCP_PATH_TOKEN
+  ? `/mcp/${process.env.MCP_PATH_TOKEN}`
+  : "/mcp";
+
 // Fail loud on clearly-wrong config instead of running against a broken catalog.
 export function validateConfig(): void {
   if (process.env.VEDA_STAC_ROOT) {

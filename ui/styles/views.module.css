@@ -88,14 +88,9 @@
     gap: 0.5rem;
   }
 
-  /* Base forces single-line ellipsis; collection titles need to wrap. */
+  /* Base already clamps to two lines; shrink for the narrow panel and let
+   * long unbroken ids wrap. */
   :global(.blocks-card-detailed__title) {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    white-space: normal;
-    text-overflow: clip;
     font-size: 1rem;
     line-height: 1.3rem;
     overflow-wrap: anywhere;
